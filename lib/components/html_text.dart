@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../utils/emoji_util.dart';
 import '../utils/extensions.dart';
+import '../utils/imageview_route.dart';
 import '../utils/storage_util.dart';
 import '../utils/utils.dart';
 
@@ -46,10 +47,9 @@ Widget htmlText(
           onShowTotalReply();
         }
       } else if (url.contains('image.coolapk.com')) {
-        Map<dynamic, dynamic> arguments = {
-          "imgList": !picArr.isNullOrEmpty ? picArr : [url],
-        };
-        Get.toNamed('/imageview', arguments: arguments);
+        openImageViewWithGet(
+          imgList: !picArr.isNullOrEmpty ? picArr! : [url],
+        );
       } else if (url == '/contacts/fans') {
         if (onViewFan != null) {
           onViewFan();

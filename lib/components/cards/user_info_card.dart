@@ -8,6 +8,7 @@ import '../../logic/model/feed/datum.dart';
 import '../../pages/ffflist/ffflist_page.dart';
 import '../../utils/date_util.dart';
 import '../../utils/global_data.dart';
+import '../../utils/imageview_route.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 
@@ -35,10 +36,10 @@ class UserInfoCard extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () {
-                    Map<dynamic, dynamic> arguments = {
-                      "imgList": [data.cover],
-                    };
-                    Get.toNamed('/imageview', arguments: arguments);
+                    openImageViewWithGet(
+                      imgList: [data.cover ?? ''],
+                      heroTag: data.cover,
+                    );
                   },
                   child: networkImage(
                     data.cover.toString(),
@@ -69,24 +70,27 @@ class UserInfoCard extends StatelessWidget {
               left: 20,
               child: GestureDetector(
                 onTap: () {
-                  Map<dynamic, dynamic> arguments = {
-                    "imgList": [data.userAvatar],
-                  };
-                  Get.toNamed('/imageview', arguments: arguments);
+                  openImageViewWithGet(
+                    imgList: [data.userAvatar ?? ''],
+                    heroTag: data.userAvatar,
+                  );
                 },
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      width: 4,
-                      color: Theme.of(context).colorScheme.surface,
+                child: Hero(
+                  tag: data.userAvatar ?? '',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        width: 4,
+                        color: Theme.of(context).colorScheme.surface,
+                      ),
+                      shape: BoxShape.circle,
                     ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: clipNetworkImage(
-                    data.userAvatar ?? '',
-                    isAvatar: true,
-                    width: 76,
-                    height: 76,
+                    child: clipNetworkImage(
+                      data.userAvatar ?? '',
+                      isAvatar: true,
+                      width: 76,
+                      height: 76,
+                    ),
                   ),
                 ),
               ),

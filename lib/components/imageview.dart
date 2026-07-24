@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import '../components/nine_grid_view.dart';
 import '../constants/constants.dart';
+import '../utils/imageview_route.dart';
 import '../utils/utils.dart';
 
 Widget image(
@@ -38,50 +39,59 @@ Widget image(
     height: isFeedArticle || picArr.length == 1 ? imageHeight : null,
     width: isFeedArticle || picArr.length == 1 ? imageWidth : maxWidth,
     itemCount: isFeedArticle ? 1 : picArr.length,
-    itemBuilder: (context, index) => GestureDetector(
-      onTap: () {
-        Map<dynamic, dynamic> arguments = {
-          "imgList": picArr,
-          "initialPage": isFeedArticle
-              ? picArr.indexOf(articleImg!)
-              : picArr.indexOf(picArr[index]),
-        };
-        Get.toNamed('/imageview', arguments: arguments);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-            strokeAlign: BorderSide.strokeAlignOutside,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              networkImage(
-                isFeedArticle
-                    ? '$articleImg${Constants.SUFFIX_THUMBNAIL}'
-                    : '${picArr[index]}${Constants.SUFFIX_THUMBNAIL}',
-                width: imageWidth,
-                height: imageHeight,
-                fit: isFeedArticle || picArr.length == 1
-                    ? BoxFit.fill
-                    : BoxFit.cover,
+    itemBuilder: (context, index) {
+      final String imgUrl = isFeedArticle
+          ? (articleImg ?? picArr.first)
+          : picArr[index];
+      return GestureDetector(
+        onTap: () {
+          openImageView(
+            context,
+            imgList: picArr,
+            initialPage: isFeedArticle
+                ? picArr.indexOf(articleImg!)
+                : picArr.indexOf(picArr[index]),
+            heroTag: imgUrl,
+          );
+        },
+        child: Hero(
+          tag: imgUrl,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.5),
+                strokeAlign: BorderSide.strokeAlignOutside,
               ),
-              if ((articleImg ?? picArr[index]).endsWith(Constants.SUFFIX_GIF))
-                _badge(context, 'GIF'),
-              if (!(articleImg ?? picArr[index])
-                      .endsWith(Constants.SUFFIX_GIF) &&
-                  _isLongImage(articleImg ?? picArr[index]))
-                _badge(context, '长图'),
-            ],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  networkImage(
+                    '$imgUrl${Constants.SUFFIX_THUMBNAIL}',
+                    width: imageWidth,
+                    height: imageHeight,
+                    fit: isFeedArticle || picArr.length == 1
+                        ? BoxFit.fill
+                        : BoxFit.cover,
+                  ),
+                  if (imgUrl.endsWith(Constants.SUFFIX_GIF))
+                    _badge(context, 'GIF'),
+                  if (!imgUrl.endsWith(Constants.SUFFIX_GIF) &&
+                      _isLongImage(imgUrl))
+                    _badge(context, '长图'),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 

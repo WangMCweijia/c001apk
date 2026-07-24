@@ -21,12 +21,15 @@ class _ImageViewPageState extends State<ImageViewPage> {
   late int _initialPage;
   final _currentPageStream = StreamController<int>();
   late List<String> _imgList;
+  String? _heroTag;
   late final _pageController = PageController(initialPage: _initialPage);
 
   @override
   void dispose() {
     _currentPageStream.close();
     _pageController.dispose();
+    // 退出时恢复状态栏
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -36,6 +39,9 @@ class _ImageViewPageState extends State<ImageViewPage> {
     int initialPage = Get.arguments['initialPage'] ?? 0;
     _initialPage = initialPage < 0 ? 0 : initialPage;
     _imgList = List.from(Get.arguments['imgList']);
+    _heroTag = Get.arguments['heroTag'];
+    // 进入时隐藏状态栏（全屏沉浸）
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   void _onExit() {
@@ -139,10 +145,11 @@ class _ImageViewPageState extends State<ImageViewPage> {
                 ),
                 scrollPhysics: const BouncingScrollPhysics(),
                 builder: (BuildContext context, int index) {
+                  final tag = _heroTag ?? _imgList[index];
                   return PhotoViewGalleryPageOptions(
                     imageProvider: CachedNetworkImageProvider(_imgList[index]),
                     initialScale: PhotoViewComputedScale.contained,
-                    heroAttributes: PhotoViewHeroAttributes(tag: _imgList[index]),
+                    heroAttributes: PhotoViewHeroAttributes(tag: tag),
                   );
                 },
                 itemCount: _imgList.length,

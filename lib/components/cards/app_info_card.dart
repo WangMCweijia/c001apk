@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../logic/model/feed/datum.dart';
 import '../../utils/date_util.dart';
+import '../../utils/imageview_route.dart';
 
 class AppInfoCard extends StatelessWidget {
   const AppInfoCard({super.key, required this.data, this.onDownloadApk});
@@ -23,17 +24,20 @@ class AppInfoCard extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () {
-              Map<dynamic, dynamic> arguments = {
-                "imgList": [data.logo.toString()],
-              };
-              Get.toNamed('/imageview', arguments: arguments);
+              openImageViewWithGet(
+                imgList: [data.logo.toString()],
+                heroTag: data.logo.toString(),
+              );
             },
-            child: clipNetworkImage(
-              data.logo.toString(),
-              radius: 18,
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
+            child: Hero(
+              tag: data.logo.toString(),
+              child: clipNetworkImage(
+                data.logo.toString(),
+                radius: 18,
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           const SizedBox(width: 10),
