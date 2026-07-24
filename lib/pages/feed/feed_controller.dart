@@ -78,6 +78,10 @@ class FeedController extends CommonController {
           articleList!
               .insert(0, FeedArticle(type: 'image', url: data.messageCover));
         }
+        if (!data.message.isNullOrEmpty &&
+            !articleList!.any((item) => item.type == 'text')) {
+          articleList!.add(FeedArticle(type: 'text', message: data.message));
+        }
         articleImgList = articleList!
             .where((item) => item.type == 'image')
             .map((item) => item.url.orEmpty)
