@@ -95,7 +95,7 @@ Widget buildBody(
         padding: isReply2Reply
             ? EdgeInsets.only(bottom: bottomPadding)
             : EdgeInsets.only(
-                left: 10, top: 10, right: 10, bottom: 10 + bottomPadding),
+                left: 8, top: 8, right: 8, bottom: 8 + bottomPadding),
         itemCount: dataList.length + 1,
         itemBuilder: (_, index) {
           if (index == dataList.length) {

@@ -10,12 +10,14 @@ Widget messageThirdCard(
 ) {
   return Material(
     clipBehavior: Clip.hardEdge,
-    borderRadius: const BorderRadius.all(Radius.circular(12)),
+    borderRadius: const BorderRadius.all(Radius.circular(14)),
     color: Theme.of(context).colorScheme.onInverseSurface,
+    elevation: 1,
+    shadowColor: Colors.black.withValues(alpha: 0.06),
     child: InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Stack(
           alignment: Alignment.center,
           children: [

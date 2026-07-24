@@ -146,14 +146,32 @@ class _MessagePageState extends State<MessagePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的'),
         automaticallyImplyLeading: false,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.primary,
+                colorScheme.primary.withValues(alpha: 0.85),
+              ],
+            ),
+          ),
+        ),
+        titleTextStyle: TextStyle(
+          color: colorScheme.onPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
         actions: [
           IconButton(
             onPressed: () => Get.toNamed('/settings'),
-            icon: const Icon(Icons.settings),
+            icon: Icon(Icons.settings, color: colorScheme.onPrimary),
             tooltip: '设置',
           ),
         ],

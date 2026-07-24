@@ -43,7 +43,9 @@ class FeedCard extends StatelessWidget {
       color:
           isFeedContent ? null : Theme.of(context).colorScheme.onInverseSurface,
       borderRadius:
-          isFeedContent ? null : const BorderRadius.all(Radius.circular(12)),
+          isFeedContent ? null : const BorderRadius.all(Radius.circular(14)),
+      elevation: isFeedContent ? 0 : 1,
+      shadowColor: isFeedContent ? null : Colors.black.withValues(alpha: 0.08),
       child: InkWell(
         highlightColor: isFeedContent ? Colors.transparent : null,
         splashColor: isFeedContent ? Colors.transparent : null,
@@ -51,7 +53,7 @@ class FeedCard extends StatelessWidget {
         onTap: isFeedContent ? null : _onViewFeed,
         onLongPress: () =>
             Get.toNamed('/copy', parameters: {'text': data.message.orEmpty}),
-        borderRadius: isFeedContent ? null : BorderRadius.circular(12),
+        borderRadius: isFeedContent ? null : BorderRadius.circular(14),
         child: Padding(
           padding: EdgeInsets.only(bottom: isFeedContent ? 12 : 10),
           child: Column(
@@ -92,9 +94,9 @@ class FeedCard extends StatelessWidget {
   Widget _image() {
     return Padding(
       padding: EdgeInsets.only(
-        left: isFeedContent ? 16 : 10,
+        left: isFeedContent ? 16 : 14,
         top: 10,
-        right: isFeedContent ? 16 : 10,
+        right: isFeedContent ? 16 : 14,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -313,9 +315,9 @@ class FeedCard extends StatelessWidget {
       if (!data.messageTitle.isNullOrEmpty)
         Padding(
           padding: EdgeInsets.only(
-            left: isFeedContent ? 16 : 10,
-            top: 5,
-            right: isFeedContent ? 16 : 10,
+            left: isFeedContent ? 16 : 14,
+            top: 8,
+            right: isFeedContent ? 16 : 14,
           ),
           child: htmlText(
             data.messageTitle.orEmpty,
@@ -325,9 +327,9 @@ class FeedCard extends StatelessWidget {
         ),
       Padding(
         padding: EdgeInsets.only(
-          left: isFeedContent ? 16 : 10,
-          top: 5,
-          right: isFeedContent ? 16 : 10,
+          left: isFeedContent ? 16 : 14,
+          top: 6,
+          right: isFeedContent ? 16 : 14,
         ),
         child: htmlText(
           data.message.orEmpty,
