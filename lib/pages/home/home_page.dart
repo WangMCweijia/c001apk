@@ -88,9 +88,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.primary,
+                colorScheme.primary.withValues(alpha: 0.85),
+              ],
+            ),
+          ),
+        ),
+        titleTextStyle: TextStyle(
+          color: colorScheme.onPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
         title: TabBar(
           controller: _tabController,
           tabs: _tabList,
@@ -101,6 +119,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           labelPadding: const EdgeInsets.symmetric(horizontal: 12),
           indicatorSize: TabBarIndicatorSize.label,
           dividerHeight: 0,
+          labelColor: colorScheme.onPrimary,
+          unselectedLabelColor: colorScheme.onPrimary.withValues(alpha: 0.6),
+          indicatorColor: colorScheme.onPrimary,
           onTap: (index) {
             if (!_tabController.indexIsChanging) {
               scrollToTop(index);
@@ -110,7 +131,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         actions: [
           IconButton(
             onPressed: () => Get.toNamed('/search'),
-            icon: const Icon(Icons.search),
+            icon: Icon(Icons.search, color: colorScheme.onPrimary),
             tooltip: '搜索',
           )
         ],
