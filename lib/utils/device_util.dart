@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'dart:math';
+
+import 'package:device_info_plus/device_info_plus.dart';
 
 import '../constants/constants.dart';
 
@@ -113,5 +116,98 @@ class DeviceUtil {
     ];
     return androidVersionReleases[
         Random().nextInt(androidVersionReleases.length)];
+  }
+
+  // ==================== 本机真实参数获取 ====================
+  // 用于"参数"页默认识别本机参数。仅在 Android 平台可获取；
+  // 桌面/模拟器等环境获取失败时回退到随机值。
+
+  /// 获取本机制作商（manufacturer）
+  static Future<String> realManufacturer() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final v = info.data['manufacturer'];
+        if (v is String && v.isNotEmpty) {
+          return _capitalize(v);
+        }
+      }
+    } catch (_) {}
+    return randomManufacturer();
+  }
+
+  /// 获取本机品牌（brand）
+  static Future<String> realBrand() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final v = info.data['brand'];
+        if (v is String && v.isNotEmpty) {
+          return _capitalize(v);
+        }
+      }
+    } catch (_) {}
+    return randomBrand();
+  }
+
+  /// 获取本机机型（model）
+  static Future<String> realModel() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final v = info.data['model'];
+        if (v is String && v.isNotEmpty) {
+          return v;
+        }
+      }
+    } catch (_) {}
+    return randomDeviceModel();
+  }
+
+  /// 获取本机构建号（buildNumber / id）
+  static Future<String> realBuildNumber() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final v = info.data['id'];
+        if (v is String && v.isNotEmpty) {
+          return v;
+        }
+      }
+    } catch (_) {}
+    return randHexString(32);
+  }
+
+  /// 获取本机 SDK 版本号
+  static Future<String> realSdkInt() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final v = info.data['version']['sdkInt'];
+        if (v != null) {
+          return v.toString();
+        }
+      }
+    } catch (_) {}
+    return randomSdkInt();
+  }
+
+  /// 获取本机 Android 版本号（release，如 "13" / "14"）
+  static Future<String> realAndroidVersion() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final v = info.data['version']['release'];
+        if (v is String && v.isNotEmpty) {
+          return v;
+        }
+      }
+    } catch (_) {}
+    return randomAndroidVersionRelease();
+  }
+
+  static String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
   }
 }

@@ -21,6 +21,8 @@ import '../../pages/feed/reply/reply_page.dart';
 import '../../utils/device_util.dart';
 import '../../utils/extensions.dart';
 import '../../utils/global_data.dart';
+import '../../utils/menu_labels.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 
@@ -450,6 +452,23 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         preferredSize: const Size(double.infinity, 56),
         child: Obx(
           () => AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            foregroundColor:
+                AppTheme.appBarForeground(Theme.of(context).brightness),
+            titleTextStyle: TextStyle(
+              color:
+                  AppTheme.appBarForeground(Theme.of(context).brightness),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient:
+                    AppTheme.appBarGradient(Theme.of(context).brightness),
+              ),
+            ),
             titleSpacing: 0,
             title: StreamBuilder(
               stream: _titleStreamC.stream,
@@ -527,15 +546,15 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                                 value: item,
                                 child: item == FeedMenuItem.Fav
                                     ? Text(
-                                        _feedController.isFav ? 'UnFav' : 'Fav',
+                                        _feedController.isFav ? '取消收藏' : '收藏',
                                       )
                                     : item == FeedMenuItem.Block
                                         ? Text(
                                             _feedController.isBlocked
-                                                ? 'Unblock'
-                                                : 'Block',
+                                                ? '取消屏蔽'
+                                                : '屏蔽',
                                           )
-                                        : Text(item.name),
+                                        : Text(MenuLabels.of(item)),
                               ))
                           .toList(),
                     )

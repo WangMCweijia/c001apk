@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../components/cards/search_history_card.dart';
 import '../../pages/blacklist/black_list_controller.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/date_util.dart';
 
 enum BlackListType { user, topic }
@@ -50,7 +51,8 @@ class _BlackListPageState extends State<BlackListPage> {
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        appBar: AppBar(
+        appBar: AppTheme.gradientAppBar(
+          context: context,
           title: TextField(
             focusNode: _focusNode,
             controller: _textController,

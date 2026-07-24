@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../components/common_body.dart';
 import '../../pages/noitfication/notification_controller.dart';
+import '../../utils/app_theme.dart';
 
 // ignore: constant_identifier_names
 enum NotificationType { AT, COMMENT, LIKE, FOLLOW, MESSAGE }
@@ -48,7 +49,8 @@ class _NotificationPageState extends State<NotificationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: Text(_title),
         bottom: const PreferredSize(
           preferredSize: Size.zero,

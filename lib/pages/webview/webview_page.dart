@@ -9,6 +9,7 @@ import '../../constants/constants.dart';
 import '../../utils/cache_util.dart';
 import '../../utils/extensions.dart';
 import '../../utils/global_data.dart';
+import '../../utils/menu_labels.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 
@@ -140,12 +141,12 @@ class _WebviewPageState extends State<WebviewPage> {
             },
             itemBuilder: (context) => <PopupMenuEntry<WebviewMenuItem>>[
               ...WebviewMenuItem.values.sublist(0, 4).map(
-                  (item) => PopupMenuItem(value: item, child: Text(item.name))),
+                  (item) => PopupMenuItem(value: item, child: Text(MenuLabels.of(item)))),
               const PopupMenuDivider(),
               PopupMenuItem(
                   value: WebviewMenuItem.Go_Back,
                   child: Text(
-                    WebviewMenuItem.Go_Back.name,
+                    MenuLabels.of(WebviewMenuItem.Go_Back),
                     style:
                         TextStyle(color: Theme.of(context).colorScheme.error),
                   )),

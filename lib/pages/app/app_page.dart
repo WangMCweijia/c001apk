@@ -15,6 +15,8 @@ import '../../pages/home/return_top_controller.dart';
 import '../../utils/device_util.dart';
 import '../../utils/extensions.dart';
 import '../../utils/global_data.dart';
+import '../../utils/menu_labels.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 import '../feed/reply/reply_page.dart';
@@ -175,7 +177,23 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
           preferredSize: const Size(double.infinity, 56),
           child: Obx(
             () => AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
               surfaceTintColor: Colors.transparent,
+              foregroundColor:
+                  AppTheme.appBarForeground(Theme.of(context).brightness),
+              titleTextStyle: TextStyle(
+                color:
+                    AppTheme.appBarForeground(Theme.of(context).brightness),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  gradient:
+                      AppTheme.appBarGradient(Theme.of(context).brightness),
+                ),
+              ),
               title: !controller.appName.isNullOrEmpty &&
                       controller.scrollRatio.value == 1
                   ? Text(controller.appName!)
@@ -234,13 +252,13 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
                                       child: Text(
                                         item == AppMenuItem.Block
                                             ? (controller.isBlocked
-                                                ? 'UnBlock'
-                                                : 'Block')
+                                                ? '取消屏蔽'
+                                                : '屏蔽')
                                             : item == AppMenuItem.Follow
                                                 ? (controller.isFollow
-                                                    ? 'UnFollow'
-                                                    : 'Follow')
-                                                : item.name,
+                                                    ? '取消关注'
+                                                    : '关注')
+                                                : MenuLabels.of(item),
                                       ),
                                     ))
                                 .toList(),
@@ -270,6 +288,14 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
                               color: Theme.of(context).colorScheme.surface,
                               child: TabBar(
                                 controller: _tabController,
+                                labelColor: AppTheme.appBarForeground(
+                                    Theme.of(context).brightness),
+                                unselectedLabelColor:
+                                    AppTheme.appBarForeground(
+                                            Theme.of(context).brightness)
+                                        .withValues(alpha: 0.6),
+                                indicatorColor: AppTheme.appBarForeground(
+                                    Theme.of(context).brightness),
                                 tabs: _tabs,
                                 onTap: (index) {
                                   if (!_tabController.indexIsChanging) {

@@ -8,6 +8,7 @@ import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../utils/download_util.dart';
 import '../../utils/utils.dart';
+import '../../utils/app_theme.dart';
 
 class ImageViewPage extends StatefulWidget {
   const ImageViewPage({super.key});
@@ -40,7 +41,8 @@ class _ImageViewPageState extends State<ImageViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: StreamBuilder(
           initialData: _initialPage,
           stream: _currentPageStream.stream,

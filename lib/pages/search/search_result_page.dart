@@ -8,8 +8,10 @@ import 'package:get/get.dart';
 import '../../pages/home/return_top_controller.dart';
 import '../../pages/search/search_order_controller.dart';
 import '../../pages/search/search_result_content.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/device_util.dart';
 import '../../utils/extensions.dart';
+import '../../utils/menu_labels.dart';
 
 enum SearchContentType { FEED, APP, GAME, TOPIC, PRODUCT, USER }
 
@@ -87,14 +89,30 @@ class _SearchResultPageState extends State<SearchResultPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: AppTheme.appBarForeground(Theme.of(context).brightness),
+        titleTextStyle: TextStyle(
+          color: AppTheme.appBarForeground(Theme.of(context).brightness),
+          fontSize: 18,
+          fontWeight: FontWeight.w400,
+        ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: AppTheme.appBarGradient(Theme.of(context).brightness),
+          ),
+        ),
         title: GestureDetector(
           onTap: () => Get.back(),
           child: ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
               _keyword,
-              style: const TextStyle(fontSize: 18),
+              style: TextStyle(
+                fontSize: 18,
+                color: AppTheme.appBarForeground(Theme.of(context).brightness),
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -103,6 +121,11 @@ class _SearchResultPageState extends State<SearchResultPage>
                     '$_pageType: $_title',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppTheme.appBarForeground(
+                              Theme.of(context).brightness)
+                          .withValues(alpha: 0.7),
+                    ),
                   )
                 : null,
           ),
@@ -130,7 +153,7 @@ class _SearchResultPageState extends State<SearchResultPage>
                                 children: [
                                   Expanded(
                                     flex: 1,
-                                    child: Text(item.name),
+                                    child: Text(MenuLabels.of(item)),
                                   ),
                                   const Icon(Icons.arrow_right)
                                 ],
@@ -145,6 +168,13 @@ class _SearchResultPageState extends State<SearchResultPage>
             ? TabBar(
                 isScrollable: true,
                 controller: _tabController,
+                labelColor:
+                    AppTheme.appBarForeground(Theme.of(context).brightness),
+                unselectedLabelColor:
+                    AppTheme.appBarForeground(Theme.of(context).brightness)
+                        .withValues(alpha: 0.6),
+                indicatorColor:
+                    AppTheme.appBarForeground(Theme.of(context).brightness),
                 tabs: SearchContentType.values
                     .map((type) => Tab(
                           text: type.name,
@@ -204,10 +234,10 @@ class _SearchResultPageState extends State<SearchResultPage>
           RelativeRect.fromLTRB(screenSize.width, 0, 0, screenSize.height),
       items: isSearchType
           ? SearchType.values
-              .map((type) => PopupMenuItem(value: type, child: Text(type.name)))
+              .map((type) => PopupMenuItem(value: type, child: Text(MenuLabels.of(type))))
               .toList()
           : SearchSortType.values
-              .map((type) => PopupMenuItem(value: type, child: Text(type.name)))
+              .map((type) => PopupMenuItem(value: type, child: Text(MenuLabels.of(type))))
               .toList(),
       elevation: 8.0,
     ).then((value) {

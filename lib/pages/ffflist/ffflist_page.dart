@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../pages/carousel/carousel_page.dart';
 import '../../pages/ffflist/ffflist_content.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/global_data.dart';
 
 enum FFFListType {
@@ -70,7 +71,8 @@ class _FFFListPageState extends State<FFFListPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: Text(
           _titleText,
           maxLines: 1,

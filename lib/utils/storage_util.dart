@@ -171,6 +171,22 @@ class GStorage {
     setVersionName(Constants.VERSION_NAME);
     setApiVersion(Constants.API_VERSION);
     setVersionCode(Constants.VERSION_CODE);
+    // 默认识别本机真实参数（Android 平台），获取失败回退随机值
+    setManufacturer(await DeviceUtil.realManufacturer());
+    setBrand(await DeviceUtil.realBrand());
+    setModel(await DeviceUtil.realModel());
+    setBuildNumber(await DeviceUtil.realBuildNumber());
+    setSdkInt(await DeviceUtil.realSdkInt());
+    setAndroidVersion(await DeviceUtil.realAndroidVersion());
+    fullSetUserAgent();
+    await fullSetXAppDevice();
+  }
+
+  /// 生成随机参数（保留旧行为，供"生成随机参数"按钮使用）
+  static Future<void> regenerateRandomParams() async {
+    setVersionName(Constants.VERSION_NAME);
+    setApiVersion(Constants.API_VERSION);
+    setVersionCode(Constants.VERSION_CODE);
     setManufacturer(DeviceUtil.randomManufacturer());
     setBrand(DeviceUtil.randomBrand());
     setModel(DeviceUtil.randomDeviceModel());

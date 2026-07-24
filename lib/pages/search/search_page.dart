@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../components/cards/search_history_card.dart';
 import '../../pages/search/search_page_controller.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/extensions.dart';
 
 class SearchPage extends StatefulWidget {
@@ -51,20 +52,33 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: AppTheme.appBarForeground(Theme.of(context).brightness),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: AppTheme.appBarGradient(Theme.of(context).brightness),
+          ),
+        ),
         title: TextField(
           focusNode: _focusNode,
           onTap: () => _focusNode.requestFocus(),
           controller: _controller,
-          style: const TextStyle(fontSize: 18),
+          style: TextStyle(
+            fontSize: 18,
+            color: AppTheme.appBarForeground(Theme.of(context).brightness),
+          ),
           onChanged: (value) {
             _clearStream.add(value.isNotEmpty);
           },
           decoration: InputDecoration(
             border: InputBorder.none,
             hintText: 'Search${!_title.isNullOrEmpty ? ' in $_title' : ''}',
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.normal,
+              color: AppTheme.appBarForeground(Theme.of(context).brightness)
+                  .withValues(alpha: 0.6),
             ),
           ),
           textInputAction: TextInputAction.search,

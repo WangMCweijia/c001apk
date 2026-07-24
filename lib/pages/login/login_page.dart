@@ -17,6 +17,7 @@ import '../../utils/global_data.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/token_util.dart';
 import '../../utils/utils.dart';
+import '../../utils/app_theme.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -174,7 +175,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: const Text('登录'),
         bottom: const PreferredSize(
           preferredSize: Size.zero,

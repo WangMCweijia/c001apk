@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../components/cards/feed_card.dart';
 import '../../pages/history/history_controller.dart';
+import '../../utils/app_theme.dart';
 
 // ignore: constant_identifier_names
 enum HistoryType { Favorite, History }
@@ -34,7 +35,8 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        appBar: AppBar(
+        appBar: AppTheme.gradientAppBar(
+          context: context,
           title: Text(_type.name),
           actions: _controller.dataList.isNotEmpty
               ? [

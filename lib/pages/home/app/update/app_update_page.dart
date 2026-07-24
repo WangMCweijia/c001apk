@@ -13,6 +13,7 @@ import '../../../../logic/state/loading_state.dart';
 import '../../../../pages/home/app/app_list_controller.dart';
 import '../../../../utils/extensions.dart';
 import '../../../../utils/token_util.dart';
+import '../../../../utils/app_theme.dart';
 
 class AppUpdatePage extends StatefulWidget {
   const AppUpdatePage({super.key});
@@ -138,7 +139,8 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: Text('Update${_length != null ? ': $_length' : ''}'),
         bottom: const PreferredSize(
           preferredSize: Size.zero,

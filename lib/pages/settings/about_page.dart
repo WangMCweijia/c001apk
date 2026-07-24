@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../constants/constants.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/utils.dart';
 
 class AboutPage extends StatelessWidget {
@@ -11,7 +12,8 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final version = Get.parameters['version'] ?? '';
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: const Text('关于'),
         leading: const BackButton(),
       ),

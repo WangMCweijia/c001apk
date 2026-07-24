@@ -12,6 +12,8 @@ import '../../pages/topic/topic_order_controller.dart';
 import '../../utils/device_util.dart';
 import '../../utils/extensions.dart';
 import '../../utils/global_data.dart';
+import '../../utils/menu_labels.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 
@@ -168,7 +170,8 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
                       child: const Icon(Icons.add),
                     )
                   : null,
-              appBar: AppBar(
+              appBar: AppTheme.gradientAppBar(
+                context: context,
                 title: Text(
                   _topicController.title!,
                   maxLines: 1,
@@ -180,6 +183,13 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
                     : TabBar(
                         controller: _tabController,
                         isScrollable: true,
+                        labelColor: AppTheme.appBarForeground(
+                            Theme.of(context).brightness),
+                        unselectedLabelColor: AppTheme.appBarForeground(
+                                Theme.of(context).brightness)
+                            .withValues(alpha: 0.6),
+                        indicatorColor: AppTheme.appBarForeground(
+                            Theme.of(context).brightness),
                         tabs: _topicController.tabList!
                             .map((item) => Tab(text: item.title.toString()))
                             .toList(),
@@ -265,11 +275,11 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
                     itemBuilder: (context) => [
                       PopupMenuItem(
                         value: TopicMenuItem.Copy,
-                        child: Text(TopicMenuItem.Copy.name),
+                        child: Text(MenuLabels.of(TopicMenuItem.Copy)),
                       ),
                       PopupMenuItem(
                         value: TopicMenuItem.Share,
-                        child: Text(TopicMenuItem.Share.name),
+                        child: Text(MenuLabels.of(TopicMenuItem.Share)),
                       ),
                       if (_shouldShowActions)
                         PopupMenuItem(
@@ -278,7 +288,7 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
                             children: [
                               Expanded(
                                 flex: 1,
-                                child: Text(TopicMenuItem.Sort.name),
+                                child: Text(MenuLabels.of(TopicMenuItem.Sort)),
                               ),
                               const Icon(Icons.arrow_right)
                             ],
@@ -287,12 +297,12 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
                       PopupMenuItem(
                         value: TopicMenuItem.Follow,
                         child: Text(
-                            _topicController.isFollow ? 'UnFollow' : 'Follow'),
+                            _topicController.isFollow ? '取消关注' : '关注'),
                       ),
                       PopupMenuItem(
                         value: TopicMenuItem.Block,
                         child: Text(
-                            _topicController.isBlocked ? 'UnBlock' : 'Block'),
+                            _topicController.isBlocked ? '取消屏蔽' : '屏蔽'),
                       ),
                     ],
                   ),
@@ -318,7 +328,7 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
                     ),
             )
           : Scaffold(
-              appBar: AppBar(),
+              appBar: AppTheme.gradientAppBar(context: context),
               body:
                   Center(child: _buildBody(_topicController.topicState.value)),
             ),
@@ -333,7 +343,7 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
       position:
           RelativeRect.fromLTRB(screenSize.width, 0, 0, screenSize.height),
       items: TopicSortType.values
-          .map((type) => PopupMenuItem(value: type, child: Text(type.name)))
+          .map((type) => PopupMenuItem(value: type, child: Text(MenuLabels.of(type))))
           .toList(),
       elevation: 8.0,
     ).then((value) {

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../pages/dyh/dyh_content.dart';
 import '../../pages/home/return_top_controller.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/device_util.dart';
 
 class DyhPage extends StatefulWidget {
@@ -44,7 +45,8 @@ class _DyhPageState extends State<DyhPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: Text(_title),
         bottom: TabBar(
           controller: _tabController,

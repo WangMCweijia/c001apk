@@ -24,11 +24,13 @@ import '../../pages/feed/reply/emoji_panel.dart';
 import '../../utils/device_util.dart';
 import '../../utils/extensions.dart';
 import '../../utils/global_data.dart';
+import '../../utils/menu_labels.dart';
 import '../../utils/oss/aliyunoss_client.dart';
 import '../../utils/oss/aliyunoss_config.dart';
 import '../../utils/oss_util.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
+import '../../utils/app_theme.dart';
 
 enum PanelType { none, keyboard, emoji }
 
@@ -89,7 +91,8 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: Text(_username),
         actions: [
           PopupMenuButton(
@@ -113,7 +116,7 @@ class _ChatPageState extends State<ChatPage> {
               },
               itemBuilder: (context) => ChatMenuType.values
                   .map((item) =>
-                      PopupMenuItem(value: item, child: Text(item.name)))
+                      PopupMenuItem(value: item, child: Text(MenuLabels.of(item))))
                   .toList())
         ],
       ),

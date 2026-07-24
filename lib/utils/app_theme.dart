@@ -259,4 +259,89 @@ class AppTheme {
           : lightBackgroundGradient,
     );
   }
+
+  /// AppBar 渐变背景（用于各页面 AppBar 的 flexibleSpace）
+  /// 根据当前亮度返回日间（薄荷奶油）或夜间（暗黑）渐变。
+  static LinearGradient appBarGradient(Brightness brightness) {
+    return brightness == Brightness.dark
+        ? const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [darkBg, darkBgGradientEnd],
+          )
+        : const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [lightBgGradientStart, lightBgGradientEnd],
+          );
+  }
+
+  /// AppBar 标题/图标颜色（在渐变 AppBar 上的可读前景景色）
+  static Color appBarForeground(Brightness brightness) {
+    return brightness == Brightness.dark ? darkPrimary : lightPrimary;
+  }
+
+  /// 卡片装饰（统一各页面 ListTile / 设置项的卡片样式）
+  /// light：半透明白 + 柔和阴影 + 圆角 16 + 细白边
+  /// dark：深灰底 + 荧光绿细边框 + 软辉光 + 圆角 12
+  static BoxDecoration cardDecoration(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return BoxDecoration(
+        color: darkCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: darkCardBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: darkGlow(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      );
+    }
+    return BoxDecoration(
+      color: lightCardBg,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: lightCardBorder, width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: lightSecondary.withValues(alpha: 0.10),
+          blurRadius: 14,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    );
+  }
+
+  /// 统一渐变 AppBar 构造器：各页面直接调用即可获得双主题渐变 AppBar。
+  static AppBar gradientAppBar({
+    required BuildContext context,
+    Widget? title,
+    Widget? leading,
+    List<Widget>? actions,
+    PreferredSizeWidget? bottom,
+    bool automaticallyImplyLeading = true,
+  }) {
+    final brightness = Theme.of(context).brightness;
+    final fg = appBarForeground(brightness);
+    return AppBar(
+      automaticallyImplyLeading: automaticallyImplyLeading,
+      leading: leading,
+      title: title,
+      actions: actions,
+      bottom: bottom,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(gradient: appBarGradient(brightness)),
+      ),
+      titleTextStyle: TextStyle(
+        color: fg,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
+      iconTheme: IconThemeData(color: fg),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: false,
+    );
+  }
 }

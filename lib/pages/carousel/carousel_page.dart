@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../components/common_body.dart';
 import '../../logic/state/loading_state.dart';
 import '../../pages/carousel/carousel_controller.dart';
+import '../../utils/app_theme.dart';
 
 class CarouselPage extends StatefulWidget {
   const CarouselPage({
@@ -61,7 +62,8 @@ class _CarouselPageState extends State<CarouselPage>
         () => controller.loadingState.value is Success
             ? _isInit
                 ? Scaffold(
-                    appBar: AppBar(
+                    appBar: AppTheme.gradientAppBar(
+                      context: context,
                       title: Text(controller.pageTitle ?? _title),
                       bottom: controller.iconTabLinkGridCard == null
                           ? const PreferredSize(
@@ -98,7 +100,7 @@ class _CarouselPageState extends State<CarouselPage>
                   )
             : _isInit
                 ? Scaffold(
-                    appBar: AppBar(),
+                    appBar: AppTheme.gradientAppBar(context: context),
                     body: Center(
                       child: commonBody(
                         controller,

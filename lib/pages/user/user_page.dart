@@ -15,6 +15,8 @@ import '../../logic/state/loading_state.dart';
 import '../../pages/user/user_controller.dart';
 import '../../utils/device_util.dart';
 import '../../utils/extensions.dart';
+import '../../utils/menu_labels.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 
@@ -215,10 +217,25 @@ class _UserPageState extends State<UserPage> {
       top: 0,
       child: Obx(
         () => AppBar(
-          backgroundColor: Theme.of(context)
-              .colorScheme
-              .surface
-              .withValues(alpha: _userController.scrollRatio.value),
+          backgroundColor: _userController.scrollRatio.value == 1
+              ? Colors.transparent
+              : Theme.of(context)
+                  .colorScheme
+                  .surface
+                  .withValues(alpha: _userController.scrollRatio.value),
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: _userController.scrollRatio.value == 1
+              ? AppTheme.appBarForeground(Theme.of(context).brightness)
+              : null,
+          flexibleSpace: _userController.scrollRatio.value == 1
+              ? Container(
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.appBarGradient(
+                        Theme.of(context).brightness),
+                  ),
+                )
+              : null,
           title: _userController.scrollRatio.value == 1 &&
                   _userController.username != null
               ? Text(_userController.username!)
@@ -297,10 +314,10 @@ class _UserPageState extends State<UserPage> {
                               child: item == UserMenuItem.Block
                                   ? Text(
                                       _userController.isBlocked
-                                          ? 'UnBlock'
-                                          : 'Block',
+                                          ? '取消屏蔽'
+                                          : '屏蔽',
                                     )
-                                  : Text(item.name),
+                                  : Text(MenuLabels.of(item)),
                             ))
                         .toList(),
                   ),

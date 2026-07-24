@@ -13,6 +13,8 @@ import '../../components/settings/switch_item.dart';
 import '../../constants/constants.dart';
 import '../../pages/blacklist/black_list_page.dart' show BlackListType;
 import '../../utils/cache_util.dart';
+import '../../utils/menu_labels.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 
@@ -61,7 +63,8 @@ class _SettingsPageState extends State<SettingsPage>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppTheme.gradientAppBar(
+        context: context,
         title: const Text('设置'),
         leading: IconButton(
           onPressed: () => Get.back(),
@@ -87,17 +90,16 @@ class _SettingsPageState extends State<SettingsPage>
             itemBuilder: (context) => SettingsMenuItem.values
                 .map((item) => PopupMenuItem<SettingsMenuItem>(
                       value: item,
-                      child: Text(item.name),
+                      child: Text(MenuLabels.of(item)),
                     ))
                 .toList(),
           )
         ],
       ),
-      body: ListView(
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
-        children: [
+      body: Builder(
+        builder: (context) {
+          final brightness = Theme.of(context).brightness;
+          final items = <Widget>[
           const ItemTitle(title: Constants.APP_NAME),
           const EdittextItem(
             icon: Icons.smartphone,
@@ -283,7 +285,26 @@ class _SettingsPageState extends State<SettingsPage>
               },
             ),
           ),
-        ],
+          ];
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              if (item is ItemTitle) {
+                return item;
+              }
+              return Container(
+                decoration: AppTheme.cardDecoration(brightness),
+                child: item,
+              );
+            },
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+          );
+        },
       ),
     );
   }
