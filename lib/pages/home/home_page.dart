@@ -26,7 +26,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // late final _config = Provider.of<AppConfigProvider>(context, listen: false);
   // late bool _showFab = true; //_config.isLogin;
 
-  final _tabList = TabType.values.map((type) => Tab(text: type.name)).toList();
+  static const _tabNames = {
+    TabType.FOLLOW: '关注',
+    TabType.APP: 'APP',
+    TabType.FEED: '头条',
+    TabType.HOT: '热榜',
+    TabType.TOPIC: '话题',
+    TabType.PRODUCT: '产品',
+    TabType.COOLPIC: '酷图',
+    TabType.NONE: '',
+  };
+  final _tabList = TabType.values
+      .map((type) => Tab(text: _tabNames[type] ?? type.name))
+      .toList();
 
   final _pages = [
     const HomeFeedPage(tabType: TabType.FOLLOW),
@@ -83,14 +95,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           controller: _tabController,
           tabs: _tabList,
           isScrollable: true,
+          tabAlignment: Utils.isWideLandscape(context)
+              ? TabAlignment.center
+              : TabAlignment.startOffset,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+          indicatorSize: TabBarIndicatorSize.label,
+          dividerHeight: 0,
           onTap: (index) {
             if (!_tabController.indexIsChanging) {
               scrollToTop(index);
             }
           },
-          tabAlignment: Utils.isWideLandscape(context)
-              ? TabAlignment.center
-              : TabAlignment.startOffset,
         ),
         actions: [
           IconButton(

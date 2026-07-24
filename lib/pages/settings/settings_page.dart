@@ -63,6 +63,10 @@ class _SettingsPageState extends State<SettingsPage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('设置'),
+        leading: IconButton(
+          onPressed: () => Get.back(),
+          icon: const Icon(Icons.arrow_back),
+        ),
         actions: [
           PopupMenuButton(
             onSelected: (SettingsMenuItem item) {

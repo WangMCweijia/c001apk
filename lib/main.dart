@@ -96,7 +96,11 @@ class C001APKAPP extends StatelessWidget {
           navigationBarTheme: NavigationBarThemeData(
               surfaceTintColor: (lightDynamic != null && useMaterial)
                   ? lightColorScheme.surfaceTint
-                  : lightColorScheme.surfaceContainer),
+                  : lightColorScheme.surfaceContainer,
+              height: 72,
+              labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+              indicatorShape: const StadiumBorder(),
+            ),
           snackBarTheme: SnackBarThemeData(
             actionTextColor: lightColorScheme.primary,
             backgroundColor: lightColorScheme.secondaryContainer,
@@ -134,7 +138,11 @@ class C001APKAPP extends StatelessWidget {
           navigationBarTheme: NavigationBarThemeData(
               surfaceTintColor: (lightDynamic != null && useMaterial)
                   ? darkColorScheme.surfaceTint
-                  : darkColorScheme.surfaceContainer),
+                  : darkColorScheme.surfaceContainer,
+              height: 72,
+              labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+              indicatorShape: const StadiumBorder(),
+            ),
           snackBarTheme: SnackBarThemeData(
             actionTextColor: darkColorScheme.primary,
             backgroundColor: darkColorScheme.secondaryContainer,

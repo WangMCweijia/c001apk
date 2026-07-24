@@ -9,7 +9,6 @@ import '../../pages/home/return_top_controller.dart';
 import '../../pages/home/home_page.dart';
 import '../../pages/main/main_controller.dart';
 import '../../pages/message/message_page.dart';
-import '../../pages/settings/settings_page.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
 
@@ -55,7 +54,6 @@ class _MainPageState extends State<MainPage> {
     const pages = [
       HomePage(),
       MessagePage(),
-      SettingsPage(),
     ];
 
     const barDestinations = <NavigationDestination>[
@@ -65,14 +63,9 @@ class _MainPageState extends State<MainPage> {
         label: '主页',
       ),
       NavigationDestination(
-        selectedIcon: Icon(Icons.message),
-        icon: Icon(Icons.message_outlined),
-        label: '消息',
-      ),
-      NavigationDestination(
-        selectedIcon: Icon(Icons.settings),
-        icon: Icon(Icons.settings_outlined),
-        label: '设置',
+        selectedIcon: Icon(Icons.person),
+        icon: Icon(Icons.person_outline),
+        label: '我的',
       ),
     ];
 
@@ -83,14 +76,9 @@ class _MainPageState extends State<MainPage> {
         label: Text('主页'),
       ),
       NavigationRailDestination(
-        selectedIcon: Icon(Icons.message),
-        icon: Icon(Icons.message_outlined),
-        label: Text('消息'),
-      ),
-      NavigationRailDestination(
-        selectedIcon: Icon(Icons.settings),
-        icon: Icon(Icons.settings_outlined),
-        label: Text('设置'),
+        selectedIcon: Icon(Icons.person),
+        icon: Icon(Icons.person_outline),
+        label: Text('我的'),
       ),
     ];
 

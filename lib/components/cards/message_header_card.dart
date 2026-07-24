@@ -41,14 +41,23 @@ class MessageHeaderCard extends StatelessWidget {
                 GestureDetector(
                   onTap: () =>
                       Get.toNamed('/u/${userInfo?.uid ?? GlobalData().uid}'),
-                  child: clipNetworkImage(
-                    userInfo?.userAvatar ?? GStorage.userAvatar,
-                    isAvatar: true,
-                    width: 45,
-                    height: 45,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: clipNetworkImage(
+                      userInfo?.userAvatar ?? GStorage.userAvatar,
+                      isAvatar: true,
+                      width: 48,
+                      height: 48,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Flexible(
                   flex: 75,
                   child: Column(
