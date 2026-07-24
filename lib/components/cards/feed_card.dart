@@ -9,6 +9,7 @@ import '../../components/imageview.dart';
 import '../../components/like_button.dart';
 import '../../components/no_splash_factory.dart';
 import '../../logic/model/feed/datum.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/date_util.dart';
 import '../../utils/extensions.dart';
 import '../../utils/global_data.dart';
@@ -39,23 +40,90 @@ class FeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isFeedContent) {
+      // 动态详情页：保持原无卡片样式，仅适配背景
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            header(
+              context,
+              data,
+              isFeedContent,
+              isHistory: isHistory,
+              onDelete: onDelete,
+              onBlock: () {
+                if (onBlock != null) {
+                  onBlock!(data.uid);
+                }
+              },
+            ),
+            ..._message(),
+            if (!data.picArr.isNullOrEmpty) _image(),
+            if (!data.forwardSourceType.isNullOrEmpty)
+              _forwardSourceFeed(context),
+            if (!data.extraUrl.isNullOrEmpty) _extraUrl(context),
+            if (!data.replyRows.isNullOrEmpty) _hotReply(context),
+            bottomInfo(context, data, isFeedContent, _onViewFeed, () {
+              if (onLike != null) {
+                onLike!(data.id, data.userAction?.like);
+              }
+            }),
+            if (data.targetRow != null || !data.relationRows.isNullOrEmpty)
+              _rows(context),
+          ],
+        ),
+      );
+    }
+    // 列表卡片：双主题样式
+    // light：半透明白 + 柔和粉绿阴影 + 大圆角
+    // dark：深灰底 + 荧光绿细边框 + 软辉光
+    final cardRadius = isDark ? 12.0 : 16.0;
     return Material(
-      color:
-          isFeedContent ? null : Theme.of(context).colorScheme.onInverseSurface,
-      borderRadius:
-          isFeedContent ? null : const BorderRadius.all(Radius.circular(14)),
-      elevation: isFeedContent ? 0 : 1,
-      shadowColor: isFeedContent ? null : Colors.black.withValues(alpha: 0.08),
+      color: isDark ? AppTheme.darkCardBg : AppTheme.lightCardBg,
+      borderRadius: BorderRadius.circular(cardRadius),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        highlightColor: isFeedContent ? Colors.transparent : null,
-        splashColor: isFeedContent ? Colors.transparent : null,
-        splashFactory: isFeedContent ? NoSplashFactory() : null,
-        onTap: isFeedContent ? null : _onViewFeed,
+        highlightColor: isDark
+            ? AppTheme.darkGlow(0.12)
+            : AppTheme.lightPrimary.withValues(alpha: 0.06),
+        splashColor: isDark
+            ? AppTheme.darkGlow(0.08)
+            : AppTheme.lightPrimary.withValues(alpha: 0.04),
+        splashFactory: isDark ? NoSplashFactory() : null,
+        onTap: _onViewFeed,
         onLongPress: () =>
             Get.toNamed('/copy', parameters: {'text': data.message.orEmpty}),
-        borderRadius: isFeedContent ? null : BorderRadius.circular(14),
-        child: Padding(
-          padding: EdgeInsets.only(bottom: isFeedContent ? 12 : 10),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(cardRadius),
+            border: isDark
+                ? Border.all(color: AppTheme.darkCardBorder, width: 1)
+                : Border.all(color: AppTheme.lightCardBorder, width: 1),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: AppTheme.darkGlow(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: AppTheme.lightSecondary.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: AppTheme.lightPrimary.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+          ),
+          padding: const EdgeInsets.only(bottom: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

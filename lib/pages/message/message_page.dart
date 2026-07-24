@@ -11,6 +11,7 @@ import '../../logic/model/feed/datum.dart';
 import '../../logic/state/loading_state.dart';
 import '../../pages/message/message_controller.dart';
 import '../../pages/noitfication/notification_page.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/extensions.dart';
 import '../../utils/global_data.dart';
 import '../../utils/storage_util.dart';
@@ -146,32 +147,31 @@ class _MessagePageState extends State<MessagePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final appBarGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isDark
+          ? [AppTheme.darkBg, AppTheme.darkBgGradientEnd]
+          : [AppTheme.lightBgGradientStart, AppTheme.lightBgGradientEnd],
+    );
+    final titleColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的'),
         automaticallyImplyLeading: false,
         flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.primary,
-                colorScheme.primary.withValues(alpha: 0.85),
-              ],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: appBarGradient),
         ),
         titleTextStyle: TextStyle(
-          color: colorScheme.onPrimary,
+          color: titleColor,
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
         actions: [
           IconButton(
             onPressed: () => Get.toNamed('/settings'),
-            icon: Icon(Icons.settings, color: colorScheme.onPrimary),
+            icon: Icon(Icons.settings_outlined, color: titleColor),
             tooltip: '设置',
           ),
         ],

@@ -119,28 +119,6 @@ class _SettingsPageState extends State<SettingsPage>
               ),
             ),
           ),
-          const SwitchItem(
-            icon: Icons.palette_outlined,
-            title: '动态主题',
-            boxKey: SettingsBoxKey.useMaterial,
-            defaultValue: true,
-            forceAppUpdate: true,
-          ),
-          Visibility(
-            visible: !GStorage.useMaterial,
-            child: DropDownMenuItem(
-              icon: Icons.format_color_fill,
-              title: '主题颜色',
-              boxKey: SettingsBoxKey.staticColor,
-              items: Constants.themeType
-                  .map((type) => DropdownMenuItem<int>(
-                        value: Constants.themeType.indexOf(type),
-                        child: Text(type),
-                      ))
-                  .toList(),
-              forceAppUpdate: true,
-            ),
-          ),
           const DropDownMenuItem(
             icon: Icons.dark_mode_outlined,
             title: '夜间模式',

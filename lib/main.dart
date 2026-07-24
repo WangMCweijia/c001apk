@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -11,6 +10,7 @@ import 'components/custom_toast.dart';
 import 'constants/constants.dart';
 import 'logic/network/request.dart';
 import 'router/app_pages.dart';
+import 'utils/app_theme.dart';
 import 'utils/storage_util.dart';
 import 'utils/utils.dart';
 
@@ -63,125 +63,26 @@ class C001APKAPP extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool useMaterial =
-        GStorage.settings.get(SettingsBoxKey.useMaterial, defaultValue: true);
-    int staticColor =
-        GStorage.settings.get(SettingsBoxKey.staticColor, defaultValue: 0);
-    int selectedTheme =
-        GStorage.settings.get(SettingsBoxKey.selectedTheme, defaultValue: 0);
     double fontScale =
         GStorage.settings.get(SettingsBoxKey.fontScale, defaultValue: 1.0);
-    return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {
-      ColorScheme? lightColorScheme;
-      ColorScheme? darkColorScheme;
-      if (lightDynamic != null && darkDynamic != null && useMaterial) {
-        lightColorScheme = lightDynamic.harmonized();
-        darkColorScheme = darkDynamic.harmonized();
-      } else {
-        lightColorScheme = ColorScheme.fromSeed(
-          seedColor: Constants.seedColors[staticColor],
-          brightness: Brightness.light,
+    return GetMaterialApp(
+      title: 'c001apk',
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: GStorage.getThemeMode(),
+      getPages: AppPages.getPages,
+      initialRoute: '/',
+      builder: (BuildContext context, Widget? child) {
+        return FlutterSmartDialog(
+          toastBuilder: (String msg) => CustomToast(msg: msg),
+          child: MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(fontScale)),
+            child: child!,
+          ),
         );
-        darkColorScheme = ColorScheme.fromSeed(
-          seedColor: Constants.seedColors[staticColor],
-          brightness: Brightness.dark,
-        );
-      }
-
-      return GetMaterialApp(
-        title: 'c001apk',
-        theme: ThemeData(
-          colorScheme: selectedTheme == 2 ? darkColorScheme : lightColorScheme,
-          useMaterial3: true,
-          navigationBarTheme: NavigationBarThemeData(
-              surfaceTintColor: (lightDynamic != null && useMaterial)
-                  ? lightColorScheme.surfaceTint
-                  : lightColorScheme.surfaceContainer,
-              height: 72,
-              labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-              indicatorShape: const StadiumBorder(),
-            ),
-          snackBarTheme: SnackBarThemeData(
-            actionTextColor: lightColorScheme.primary,
-            backgroundColor: lightColorScheme.secondaryContainer,
-            closeIconColor: lightColorScheme.secondary,
-            contentTextStyle: TextStyle(color: lightColorScheme.secondary),
-            elevation: 20,
-          ),
-          pageTransitionsTheme: const PageTransitionsTheme(
-            builders: <TargetPlatform, PageTransitionsBuilder>{
-              TargetPlatform.android: ZoomPageTransitionsBuilder(
-                allowEnterRouteSnapshotting: false,
-              ),
-            },
-          ),
-          popupMenuTheme: PopupMenuThemeData(
-            surfaceTintColor: lightColorScheme.surfaceTint,
-          ),
-          cardTheme: CardThemeData(
-            surfaceTintColor: lightColorScheme.surfaceTint,
-            shadowColor: Colors.transparent,
-          ),
-          dialogTheme: DialogThemeData(
-            surfaceTintColor: lightColorScheme.surfaceTint,
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            fillColor: lightColorScheme.onInverseSurface,
-          ),
-          progressIndicatorTheme: ProgressIndicatorThemeData(
-            refreshBackgroundColor: lightColorScheme.onSecondary,
-          ),
-        ),
-        darkTheme: ThemeData(
-          colorScheme: selectedTheme == 1 ? lightColorScheme : darkColorScheme,
-          useMaterial3: true,
-          navigationBarTheme: NavigationBarThemeData(
-              surfaceTintColor: (lightDynamic != null && useMaterial)
-                  ? darkColorScheme.surfaceTint
-                  : darkColorScheme.surfaceContainer,
-              height: 72,
-              labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-              indicatorShape: const StadiumBorder(),
-            ),
-          snackBarTheme: SnackBarThemeData(
-            actionTextColor: darkColorScheme.primary,
-            backgroundColor: darkColorScheme.secondaryContainer,
-            closeIconColor: darkColorScheme.secondary,
-            contentTextStyle: TextStyle(color: darkColorScheme.secondary),
-            elevation: 20,
-          ),
-          popupMenuTheme: PopupMenuThemeData(
-            surfaceTintColor: darkColorScheme.surfaceTint,
-          ),
-          cardTheme: CardThemeData(
-            surfaceTintColor: darkColorScheme.surfaceTint,
-            shadowColor: Colors.transparent,
-          ),
-          dialogTheme: DialogThemeData(
-            surfaceTintColor: darkColorScheme.surfaceTint,
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            fillColor: darkColorScheme.onInverseSurface,
-          ),
-          progressIndicatorTheme: ProgressIndicatorThemeData(
-            refreshBackgroundColor: darkColorScheme.onSecondary,
-          ),
-        ),
-        themeMode: GStorage.getThemeMode(),
-        getPages: AppPages.getPages,
-        initialRoute: '/',
-        builder: (BuildContext context, Widget? child) {
-          return FlutterSmartDialog(
-            toastBuilder: (String msg) => CustomToast(msg: msg),
-            child: MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(textScaler: TextScaler.linear(fontScale)),
-              child: child!,
-            ),
-          );
-        },
-      );
-    });
+      },
+    );
   }
 }
 

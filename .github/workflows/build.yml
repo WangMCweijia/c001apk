@@ -2,6 +2,12 @@ name: Build
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build-android:
@@ -20,9 +26,31 @@ jobs:
         run: flutter pub get
       - name: Build APK
         run: flutter build apk --release --split-per-abi
-      - name: Upload
+      - name: Rename APKs with version & abi
+        run: |
+          set -e
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d '+' -f 1)
+          BUILD=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d '+' -f 2)
+          cd build/app/outputs/flutter-apk
+          for f in app-*-release.apk; do
+            ABI="${f#app-}"
+            ABI="${ABI%-release.apk}"
+            mv "$f" "c001apk-v${VERSION}+${BUILD}-${ABI}.apk"
+          done
+          ls -la
+      - name: Upload artifact (zip)
         uses: actions/upload-artifact@v4
         with:
-          name: Android
+          name: Android-APK
           path: build/app/outputs/flutter-apk/*.apk
-
+      - name: Create GitHub Release with APK assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_id }}
+          name: Build ${{ github.run_number }}
+          body: |
+            自动构建产物，APK 文件可直接下载安装。
+            - 日间模式：薄荷玻璃
+            - 夜间模式：极客电路绿
+          files: build/app/outputs/flutter-apk/*.apk
+          make_latest: true

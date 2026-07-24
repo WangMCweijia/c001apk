@@ -7,6 +7,7 @@ import '../../pages/home/app/app_list_page.dart';
 import '../../pages/home/feed/home_feed_page.dart';
 import '../../pages/home/return_top_controller.dart';
 import '../../pages/home/topic/home_topic_page.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/utils.dart';
 
 // ignore: constant_identifier_names
@@ -88,26 +89,31 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // AppBar 背景渐变
+    final appBarGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isDark
+          ? [AppTheme.darkBg, AppTheme.darkBgGradientEnd]
+          : [AppTheme.lightBgGradientStart, AppTheme.lightBgGradientEnd],
+    );
+    // Tab 选中色（浅色 AppBar 上用深绿，深色 AppBar 上用荧光绿）
+    final labelColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
+    final unselectedColor = isDark
+        ? AppTheme.darkOutline
+        : AppTheme.lightOnSurface.withValues(alpha: 0.55);
+    final indicatorColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.primary,
-                colorScheme.primary.withValues(alpha: 0.85),
-              ],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: appBarGradient),
         ),
         titleTextStyle: TextStyle(
-          color: colorScheme.onPrimary,
+          color: isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary,
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
         title: TabBar(
           controller: _tabController,
@@ -116,12 +122,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           tabAlignment: Utils.isWideLandscape(context)
               ? TabAlignment.center
               : TabAlignment.startOffset,
-          labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 14),
           indicatorSize: TabBarIndicatorSize.label,
           dividerHeight: 0,
-          labelColor: colorScheme.onPrimary,
-          unselectedLabelColor: colorScheme.onPrimary.withValues(alpha: 0.6),
-          indicatorColor: colorScheme.onPrimary,
+          labelColor: labelColor,
+          unselectedLabelColor: unselectedColor,
+          indicator: UnderlineTabIndicator(
+            borderSide: BorderSide(width: 2.5, color: indicatorColor),
+            insets: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          labelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
           onTap: (index) {
             if (!_tabController.indexIsChanging) {
               scrollToTop(index);
@@ -131,7 +148,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         actions: [
           IconButton(
             onPressed: () => Get.toNamed('/search'),
-            icon: Icon(Icons.search, color: colorScheme.onPrimary),
+            icon: Icon(
+              Icons.search,
+              color: isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary,
+            ),
             tooltip: '搜索',
           )
         ],

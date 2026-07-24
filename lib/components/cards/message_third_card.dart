@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../utils/app_theme.dart';
+
 Widget messageThirdCard(
   BuildContext context,
   int backgroundColor,
@@ -8,15 +10,37 @@ Widget messageThirdCard(
   int? badge,
   Function() onTap,
 ) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final cardRadius = isDark ? 12.0 : 16.0;
   return Material(
     clipBehavior: Clip.hardEdge,
-    borderRadius: const BorderRadius.all(Radius.circular(14)),
-    color: Theme.of(context).colorScheme.onInverseSurface,
-    elevation: 1,
-    shadowColor: Colors.black.withValues(alpha: 0.06),
+    borderRadius: BorderRadius.circular(cardRadius),
+    color: isDark ? AppTheme.darkCardBg : AppTheme.lightCardBg,
     child: InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(cardRadius),
+          border: Border.all(
+            color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
+            width: 1,
+          ),
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: AppTheme.darkGlow(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: AppTheme.lightSecondary.withValues(alpha: 0.1),
+                    blurRadius: 14,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
         padding: const EdgeInsets.all(12),
         child: Stack(
           alignment: Alignment.center,
@@ -30,6 +54,16 @@ Widget messageThirdCard(
                   decoration: BoxDecoration(
                     color: Color(backgroundColor),
                     shape: BoxShape.circle,
+                    boxShadow: isDark
+                        ? [
+                            BoxShadow(
+                              color: Color(backgroundColor)
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Icon(
                     icon,
@@ -43,10 +77,16 @@ Widget messageThirdCard(
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppTheme.darkOnSurface
+                            : AppTheme.lightOnSurface,
+                      ),
                     )),
                 Icon(
                   Icons.keyboard_arrow_right,
-                  color: Theme.of(context).colorScheme.outline,
+                  color: isDark ? AppTheme.darkOutline : AppTheme.lightOutline,
                 ),
               ],
             ),
