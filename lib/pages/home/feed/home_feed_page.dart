@@ -86,16 +86,19 @@ class _HomeFeedPageState extends State<HomeFeedPage>
       _fabAnimationCtr = AnimationController(
           vsync: this, duration: const Duration(milliseconds: 300));
       _fabAnimationCtr?.forward();
-      _homeFeedController.scrollController?.addListener(() {
-        final ScrollDirection? direction =
-            _homeFeedController.scrollController?.position.userScrollDirection;
-        if (direction == ScrollDirection.forward) {
-          _showFab();
-        } else if (direction == ScrollDirection.reverse) {
-          _hideFab();
-        }
-      });
     }
+    // 监听滚动方向：控制 FAB 和底部导航栏显隐
+    _homeFeedController.scrollController?.addListener(() {
+      final ScrollDirection? direction =
+          _homeFeedController.scrollController?.position.userScrollDirection;
+      if (direction == ScrollDirection.forward) {
+        if (isLogin) _showFab();
+        _homeFeedController.returnTopController?.setNavBarVisible(true);
+      } else if (direction == ScrollDirection.reverse) {
+        if (isLogin) _hideFab();
+        _homeFeedController.returnTopController?.setNavBarVisible(false);
+      }
+    });
   }
 
   void _showFab() {

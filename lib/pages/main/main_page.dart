@@ -19,7 +19,8 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage>
+    with SingleTickerProviderStateMixin {
   final ReturnTopController _pageScrollController =
       Get.put(ReturnTopController(), tag: 'home');
   int _selectedIndex = 0;
@@ -27,14 +28,48 @@ class _MainPageState extends State<MainPage> {
   late final MainController _mainController = Get.put(MainController());
   final _contrller = PageController();
 
+  // 底部导航栏显隐动画
+  late final AnimationController _navBarAnimCtr;
+  late final Animation<Offset> _navBarOffset;
+  late final Animation<double> _navBarOpacity;
+  Worker? _navBarWorker;
+
   @override
   void initState() {
     super.initState();
     _mainController.checkLoginInfo();
+    _navBarAnimCtr = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _navBarOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, 1),
+    ).animate(CurvedAnimation(
+      parent: _navBarAnimCtr,
+      curve: Curves.easeInOut,
+    ));
+    _navBarOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _navBarAnimCtr,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _navBarAnimCtr.forward();
+    // 监听滚动方向控制底部导航栏显隐
+    _navBarWorker = ever(_pageScrollController.navBarVisible, (bool visible) {
+      if (visible) {
+        _navBarAnimCtr.forward();
+      } else {
+        _navBarAnimCtr.reverse();
+      }
+    });
   }
 
   @override
   void dispose() async {
+    _navBarWorker?.dispose();
+    _navBarAnimCtr.dispose();
     await GStorage.close();
     Get.delete<ReturnTopController>(tag: 'home');
     Get.delete<MainController>();
@@ -90,6 +125,7 @@ class _MainPageState extends State<MainPage> {
       child: LayoutBuilder(
         builder: (context, _) {
           return Scaffold(
+            extendBody: true,
             body: Row(children: [
               if (!Utils.isPortrait(context))
                 StreamBuilder(
@@ -119,16 +155,22 @@ class _MainPageState extends State<MainPage> {
               if (Utils.isWideLandscape(context)) const Spacer(),
             ]),
             bottomNavigationBar: Utils.isPortrait(context)
-                ? StreamBuilder(
-                    initialData: _selectedIndex,
-                    stream: _indexSctream.stream,
-                    builder: (_, snapshot) => NavigationBar(
-                      destinations: barDestinations,
-                      selectedIndex: snapshot.data!,
-                      onDestinationSelected: onDestinationSelected,
-                      labelBehavior:
-                          NavigationDestinationLabelBehavior.onlyShowSelected,
-                      height: 64,
+                ? SlideTransition(
+                    position: _navBarOffset,
+                    child: FadeTransition(
+                      opacity: _navBarOpacity,
+                      child: StreamBuilder(
+                        initialData: _selectedIndex,
+                        stream: _indexSctream.stream,
+                        builder: (_, snapshot) => NavigationBar(
+                          destinations: barDestinations,
+                          selectedIndex: snapshot.data!,
+                          onDestinationSelected: onDestinationSelected,
+                          labelBehavior:
+                              NavigationDestinationLabelBehavior.onlyShowSelected,
+                          height: 64,
+                        ),
+                      ),
                     ),
                   )
                 : null,
@@ -139,6 +181,8 @@ class _MainPageState extends State<MainPage> {
   }
 
   void onDestinationSelected(int index) {
+    // 切换 tab 时始终显示底部导航栏
+    _pageScrollController.setNavBarVisible(true);
     if (index == 0 && _selectedIndex == 0) {
       _pageScrollController.setIndex(998);
     }

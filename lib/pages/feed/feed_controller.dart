@@ -14,9 +14,14 @@ import '../../utils/extensions.dart';
 import '../../utils/storage_util.dart';
 
 class FeedController extends CommonController {
-  FeedController({required this.id, required this.recordHistory});
+  FeedController({
+    required this.id,
+    required this.recordHistory,
+    this.preloadedData,
+  });
   final String id;
   final bool recordHistory;
+  final Datum? preloadedData;
 
   String listType = 'lastupdate_desc';
   final int _discussMode = 1;
@@ -60,43 +65,59 @@ class FeedController extends CommonController {
     );
   }
 
+  /// 处理动态数据：解析 messageRawOutput、补充 picArr、提取字段
+  void _processFeedData(Datum data) {
+    if (data.messageRawOutput != 'null') {
+      List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
+      articleList = jsonList
+          .map((json) => FeedArticle.fromJson(json))
+          .where((item) => ['text', 'image', 'shareUrl'].contains(item.type))
+          .toList();
+      if (!data.title.isNullOrEmpty) {
+        articleList!.insert(0, FeedArticle(type: 'title', title: data.title));
+      }
+      if (!data.messageCover.isNullOrEmpty) {
+        articleList!
+            .insert(0, FeedArticle(type: 'image', url: data.messageCover));
+      }
+      if (!data.message.isNullOrEmpty &&
+          !articleList!.any((item) => item.type == 'text')) {
+        articleList!.add(FeedArticle(type: 'text', message: data.message));
+      }
+      articleImgList = articleList!
+          .where((item) => item.type == 'image')
+          .map((item) => item.url.orEmpty)
+          .toList();
+      // 补充 picArr 中的图片：当 articleList 缺少 image 条目时，
+      // 用 data.picArr 补全，确保详情页能显示动态中的图片
+      if (!data.picArr.isNullOrEmpty) {
+        final existing = articleImgList!.toSet();
+        for (var img in data.picArr!) {
+          if (!existing.contains(img)) {
+            articleList!.add(FeedArticle(type: 'image', url: img));
+            articleImgList!.add(img);
+          }
+        }
+      }
+    }
+    if (!data.topReplyRows.isNullOrEmpty) {
+      topReply = data.topReplyRows![0];
+    }
+    if (!data.replyMeRows.isNullOrEmpty) {
+      _replyMe = data.replyMeRows![0];
+    }
+    feedUsername = data.userInfo?.username;
+    feedUid = data.uid;
+    feedTypeName = data.feedTypeName;
+    replyNum = data.replynum;
+  }
+
   Future<void> getFeedData() async {
     LoadingState<dynamic> response =
         await NetworkRepo.getDataFromUrl(url: '/v6/feed/detail?id=$id');
     if (response is Success) {
       Datum data = (response.response as Datum);
-      if (data.messageRawOutput != 'null') {
-        List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
-        articleList = jsonList
-            .map((json) => FeedArticle.fromJson(json))
-            .where((item) => ['text', 'image', 'shareUrl'].contains(item.type))
-            .toList();
-        if (!data.title.isNullOrEmpty) {
-          articleList!.insert(0, FeedArticle(type: 'title', title: data.title));
-        }
-        if (!data.messageCover.isNullOrEmpty) {
-          articleList!
-              .insert(0, FeedArticle(type: 'image', url: data.messageCover));
-        }
-        if (!data.message.isNullOrEmpty &&
-            !articleList!.any((item) => item.type == 'text')) {
-          articleList!.add(FeedArticle(type: 'text', message: data.message));
-        }
-        articleImgList = articleList!
-            .where((item) => item.type == 'image')
-            .map((item) => item.url.orEmpty)
-            .toList();
-      }
-      if (!data.topReplyRows.isNullOrEmpty) {
-        topReply = data.topReplyRows![0];
-      }
-      if (!data.replyMeRows.isNullOrEmpty) {
-        _replyMe = data.replyMeRows![0];
-      }
-      feedUsername = data.userInfo?.username;
-      feedUid = data.uid;
-      feedTypeName = data.feedTypeName;
-      replyNum = data.replynum;
+      _processFeedData(data);
       onGetData();
 
       isFav = GStorage.checkFav(id);
@@ -132,7 +153,14 @@ class FeedController extends CommonController {
   @override
   void onInit() {
     super.onInit();
-    getFeedData();
+    // 预加载：如果有预传递的数据，立即显示避免转圈，然后后台获取最新数据+评论
+    if (preloadedData != null) {
+      _processFeedData(preloadedData!);
+      feedState.value = LoadingState.success(preloadedData!);
+      getFeedData();
+    } else {
+      getFeedData();
+    }
   }
 
   void onBlockReply(dynamic uid, dynamic id) {

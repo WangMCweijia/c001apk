@@ -35,7 +35,7 @@ class FeedCard extends StatelessWidget {
   final Function(dynamic id, dynamic like)? onLike;
 
   void _onViewFeed() {
-    Get.toNamed('/feed/${data.id}');
+    Get.toNamed('/feed/${data.id}', arguments: {'datum': data});
   }
 
   @override

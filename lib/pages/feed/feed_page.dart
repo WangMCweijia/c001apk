@@ -91,10 +91,14 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   }
 
   late final String _random = DeviceUtil.randHexString(8);
+  late final Datum? _preloadedData = Get.arguments is Map
+      ? Get.arguments['datum'] as Datum?
+      : null;
   late final _feedController = Get.put(
     FeedController(
       id: _id,
       recordHistory: GStorage.recordHistory,
+      preloadedData: _preloadedData,
     ),
     tag: _id + _random,
   );
