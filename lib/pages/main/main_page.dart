@@ -128,6 +128,7 @@ class _MainPageState extends State<MainPage> {
                       onDestinationSelected: onDestinationSelected,
                       labelBehavior:
                           NavigationDestinationLabelBehavior.onlyShowSelected,
+                      height: 64,
                     ),
                   )
                 : null,

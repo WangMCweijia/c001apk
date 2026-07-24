@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
@@ -8,7 +9,6 @@ import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../utils/download_util.dart';
 import '../../utils/utils.dart';
-import '../../utils/app_theme.dart';
 
 class ImageViewPage extends StatefulWidget {
   const ImageViewPage({super.key});
@@ -38,35 +38,46 @@ class _ImageViewPageState extends State<ImageViewPage> {
     _imgList = List.from(Get.arguments['imgList']);
   }
 
+  void _onExit() {
+    Get.back();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppTheme.gradientAppBar(
-        context: context,
-        title: StreamBuilder(
-          initialData: _initialPage,
-          stream: _currentPageStream.stream,
-          builder: (_, snapshot) =>
-              Text('${snapshot.data! + 1}/${_imgList.length}'),
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // 黑色全屏背景 → 状态栏图标用浅色
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
+        systemNavigationBarContrastEnforced: false,
       ),
-      body: Stack(
-        alignment: Alignment.center,
-        children: [
-          GestureDetector(
-            onLongPress: () {
-              showDialog(
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          alignment: Alignment.center,
+          children: [
+            GestureDetector(
+              onTap: _onExit,
+              onLongPress: () {
+                showDialog(
                   context: context,
                   builder: (context) {
                     return AlertDialog(
                       clipBehavior: Clip.hardEdge,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 12),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ListTile(
                             title: const Text(
-                              'Save',
+                              '保存',
                               style: TextStyle(fontSize: 14),
                             ),
                             onTap: () {
@@ -78,7 +89,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                           if (_imgList.length != 1)
                             ListTile(
                               title: const Text(
-                                'Save All',
+                                '保存全部',
                                 style: TextStyle(fontSize: 14),
                               ),
                               onTap: () {
@@ -88,7 +99,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                             ),
                           ListTile(
                             title: const Text(
-                              'Share',
+                              '分享',
                               style: TextStyle(fontSize: 14),
                             ),
                             onTap: () {
@@ -98,7 +109,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                           ),
                           ListTile(
                             title: const Text(
-                              'Copy',
+                              '复制',
                               style: TextStyle(fontSize: 14),
                             ),
                             onTap: () {
@@ -109,7 +120,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                           if (Utils.isDesktop)
                             ListTile(
                               title: const Text(
-                                'Open In Browser',
+                                '在浏览器打开',
                                 style: TextStyle(fontSize: 14),
                               ),
                               onTap: () {
@@ -121,91 +132,109 @@ class _ImageViewPageState extends State<ImageViewPage> {
                       ),
                     );
                   });
-            },
-            child: PhotoViewGallery.builder(
-              backgroundDecoration: const BoxDecoration(
-                color: Colors.transparent,
-              ),
-              scrollPhysics: const BouncingScrollPhysics(),
-              builder: (BuildContext context, int index) {
-                return PhotoViewGalleryPageOptions(
-                  imageProvider: CachedNetworkImageProvider(_imgList[index]),
-                  initialScale: PhotoViewComputedScale.contained,
-                  heroAttributes: PhotoViewHeroAttributes(tag: _imgList[index]),
-                );
               },
-              itemCount: _imgList.length,
-              loadingBuilder: (context, event) => Center(
-                child: SizedBox(
-                  width: 20.0,
-                  height: 20.0,
-                  child: CircularProgressIndicator(
-                    value: event == null
-                        ? 0
-                        : event.cumulativeBytesLoaded /
-                            event.expectedTotalBytes!,
+              child: PhotoViewGallery.builder(
+                backgroundDecoration: const BoxDecoration(
+                  color: Colors.transparent,
+                ),
+                scrollPhysics: const BouncingScrollPhysics(),
+                builder: (BuildContext context, int index) {
+                  return PhotoViewGalleryPageOptions(
+                    imageProvider: CachedNetworkImageProvider(_imgList[index]),
+                    initialScale: PhotoViewComputedScale.contained,
+                    heroAttributes: PhotoViewHeroAttributes(tag: _imgList[index]),
+                  );
+                },
+                itemCount: _imgList.length,
+                loadingBuilder: (context, event) => Center(
+                  child: SizedBox(
+                    width: 20.0,
+                    height: 20.0,
+                    child: CircularProgressIndicator(
+                      value: event == null
+                          ? 0
+                          : event.cumulativeBytesLoaded /
+                              event.expectedTotalBytes!,
+                    ),
+                  ),
+                ),
+                pageController: _pageController,
+                onPageChanged: (index) {
+                  _initialPage = index;
+                  _currentPageStream.add(index);
+                },
+              ),
+            ),
+            if (Utils.isDesktop && _imgList.length != 1)
+              Positioned(
+                left: 0,
+                child: IconButton(
+                  onPressed: () {
+                    _pageController.animateToPage(
+                      _pageController.page!.round() - 1,
+                      duration: const Duration(milliseconds: 255),
+                      curve: Curves.ease,
+                    );
+                  },
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
               ),
-              // backgroundDecoration: widget.backgroundDecoration,
-              pageController: _pageController,
-              onPageChanged: (index) {
-                _initialPage = index;
-                _currentPageStream.add(index);
-              },
-            ),
-          ),
-          if (Utils.isDesktop && _imgList.length != 1)
-            Positioned(
-              left: 0,
-              child: IconButton(
-                onPressed: () {
-                  _pageController.animateToPage(
-                    _pageController.page!.round() - 1,
-                    duration: const Duration(milliseconds: 255),
-                    curve: Curves.ease,
-                  );
-                },
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
+            if (Utils.isDesktop && _imgList.length != 1)
+              Positioned(
+                right: 0,
+                child: IconButton(
+                  onPressed: () {
+                    _pageController.animateToPage(
+                      _pageController.page!.round() + 1,
+                      duration: const Duration(milliseconds: 255),
+                      curve: Curves.ease,
+                    );
+                  },
+                  icon: Icon(
+                    Icons.arrow_forward,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
-                style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .surface
-                        .withValues(alpha: 0.5)),
+              ),
+            // 页码：底部悬浮显示，弱化效果
+            Positioned(
+              bottom: 24,
+              child: IgnorePointer(
+                child: StreamBuilder(
+                  initialData: _initialPage,
+                  stream: _currentPageStream.stream,
+                  builder: (_, snapshot) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${snapshot.data! + 1} / ${_imgList.length}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-          if (Utils.isDesktop && _imgList.length != 1)
-            Positioned(
-              right: 0,
-              child: IconButton(
-                onPressed: () {
-                  _pageController.animateToPage(
-                    _pageController.page!.round() + 1,
-                    duration: const Duration(milliseconds: 255),
-                    curve: Curves.ease,
-                  );
-                },
-                icon: Icon(
-                  Icons.arrow_forward,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
-                ),
-                style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .surface
-                        .withValues(alpha: 0.5)),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
