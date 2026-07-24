@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI 美化方案预览</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px;
+  min-height: 100vh;
+}
+h1 { font-size: 22px; margin-bottom: 8px; color: #fff; }
+.subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tab-btn {
+  padding: 8px 18px;
+  border: 1px solid #333;
+  border-radius: 20px;
+  background: transparent;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .25s;
+  font-family: inherit;
+}
+.tab-btn:hover { border-color: #555; color: #ddd; }
+.tab-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+.phones {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.phone-wrap { display: none; flex-direction: column; align-items: center; }
+.phone-wrap.show { display: flex; }
+.phone-label { font-size: 14px; color: #999; margin-bottom: 10px; }
+
+.phone {
+  width: 340px;
+  height: 680px;
+  background: #f5f5f5;
+  border-radius: 36px;
+  overflow: hidden;
+  box-shadow: 0 0 0 8px #2a2a3e, 0 0 0 9px #444, 0 20px 60px rgba(0,0,0,.5);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* --- Common Phone Elements --- */
+.statusbar {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  font-size: 11px;
+  color: #333;
+  flex-shrink: 0;
+}
+.appbar {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  height: 52px;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.appbar-actions { margin-left: auto; display: flex; gap: 4px; }
+.appbar-actions .icon-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-size: 16px;
+  color: inherit;
+}
+.tab-scroll {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.tab-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  position: relative;
+  cursor: pointer;
+}
+.tab-item .indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 3px;
+  border-radius: 3px;
+  transition: width .2s;
+}
+.tab-item.active .indicator { width: 24px; }
+
+.feed-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.bottom-nav {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-shrink: 0;
+  border-top: 1px solid #e0e0e0;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #999;
+}
+.nav-item.active { color: #3b82f6; }
+.nav-icon { font-size: 22px; }
+
+/* --- Feed Card Base --- */
+.feed-card {
+  background: #fff;
+  margin-bottom: 8px;
+  padding: 12px;
+}
+.feed-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff; font-weight: 500;
+}
+.username { font-size: 13px; font-weight: 600; color: #333; }
+.meta { font-size: 11px; color: #999; }
+.feed-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.feed-text { font-size: 13px; line-height: 1.5; color: #555; }
+.feed-image {
+  width: 100%;
+  height: 120px;
+  border-radius: 0;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #e0e0e0, #c0c0c0);
+}
+.feed-footer {
+  display: flex;
+  gap: 20px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+/* =========================== */
+/* === Option 0: Before (Current) === */
+.phone-before .appbar { background: #fff; }
+.phone-before .tab-item { color: #666; }
+.phone-before .tab-item.active { color: #333; }
+.phone-before .tab-item.active .indicator { background: #333; }
+.phone-before .feed-card {
+  border-radius: 0;
+  box-shadow: none;
+}
+.phone-before .bottom-nav { background: #fff; }
+
+/* =========================== */
+/* === Option 1: Card Rounded + Shadow === */
+.phone-opt1 .appbar { background: #fff; }
+.phone-opt1 .tab-item { color: #666; }
+.phone-opt1 .tab-item.active { color: #3b82f6; }
+.phone-opt1 .tab-item.active .indicator { background: #3b82f6; }
+.phone-opt1 .feed-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  margin-bottom: 10px;
+  padding: 14px;
+}
+.phone-opt1 .feed-image { border-radius: 8px; }
+.phone-opt1 .bottom-nav { background: #fff; }
+
+/* =========================== */
+/* === Option 2: AppBar Gradient === */
+.phone-opt2 .appbar {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+.phone-opt2 .statusbar { color: #fff; }
+.phone-opt2 .tab-item { color: rgba(255,255,255,.6); }
+.phone-opt2 .tab-item.active { color: #fff; }
+.phone-opt2 .tab-item.active .indicator { background: #fff; }
+.phone-opt2 .feed-card {
+  border-radius: 0;
+  box-shadow: none;
+}
+.phone-opt2 .bottom-nav { background: #fff; }
+
+/* =========================== */
+/* === Option 3: Bottom Nav Upgrade === */
+.phone-opt3 .appbar { background: #fff; }
+.phone-opt3 .tab-item { color: #666; }
+.phone-opt3 .tab-item.active { color: #3b82f6; }
+.phone-opt3 .tab-item.active .indicator { background: #3b82f6; }
+.phone-opt3 .feed-card { border-radius: 0; box-shadow: none; }
+.phone-opt3 .bottom-nav {
+  background: #fff;
+  height: 72px;
+  border-top: none;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.06);
+  padding: 0 16px;
+}
+.phone-opt3 .nav-item {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 16px;
+  transition: all .2s;
+}
+.phone-opt3 .nav-item.active {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+.phone-opt3 .nav-icon { font-size: 24px; }
+
+/* =========================== */
+/* === Option 4: Feed Card Spacing === */
+.phone-opt4 .appbar { background: #fff; }
+.phone-opt4 .tab-item { color: #666; }
+.phone-opt4 .tab-item.active { color: #3b82f6; }
+.phone-opt4 .tab-item.active .indicator { background: #3b82f6; }
+.phone-opt4 .feed-card {
+  border-radius: 0;
+  box-shadow: none;
+  padding: 16px;
+  margin-bottom: 6px;
+}
+.phone-opt4 .feed-header { margin-bottom: 12px; gap: 10px; }
+.phone-opt4 .avatar { width: 40px; height: 40px; }
+.phone-opt4 .username { font-size: 14px; }
+.phone-opt4 .feed-title { font-size: 15px; margin-top: 4px; }
+.phone-opt4 .feed-text { line-height: 1.7; margin-top: 6px; }
+.phone-opt4 .feed-image { border-radius: 8px; height: 130px; }
+.phone-opt4 .feed-footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
+.phone-opt4 .bottom-nav { background: #fff; }
+
+/* =========================== */
+/* === Option 5: Full Beautification === */
+.phone-opt5 .appbar {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+.phone-opt5 .statusbar { color: #fff; }
+.phone-opt5 .tab-item { color: rgba(255,255,255,.6); padding: 8px 16px; }
+.phone-opt5 .tab-item.active { color: #fff; }
+.phone-opt5 .tab-item.active .indicator { background: #fff; }
+.phone-opt5 .feed-card {
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  margin-bottom: 10px;
+  padding: 16px;
+}
+.phone-opt5 .feed-header { margin-bottom: 12px; gap: 10px; }
+.phone-opt5 .avatar {
+  width: 42px; height: 42px;
+  border: 2px solid #e0e0e0;
+}
+.phone-opt5 .username { font-size: 14px; }
+.phone-opt5 .feed-title { font-size: 15px; margin-top: 4px; }
+.phone-opt5 .feed-text { line-height: 1.7; margin-top: 6px; }
+.phone-opt5 .feed-image { border-radius: 10px; height: 130px; }
+.phone-opt5 .feed-footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+.phone-opt5 .bottom-nav {
+  background: #fff;
+  height: 72px;
+  border-top: none;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.06);
+  padding: 0 16px;
+}
+.phone-opt5 .nav-item {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 16px;
+}
+.phone-opt5 .nav-item.active {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+.phone-opt5 .nav-icon { font-size: 24px; }
+
+/* "我的" page preview */
+.my-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+}
+.my-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #fff;
+  flex-shrink: 0;
+}
+.my-info { flex: 1; }
+.my-name { font-size: 15px; font-weight: 600; }
+.my-level { font-size: 12px; color: #999; margin-top: 2px; }
+.my-bar { font-size: 11px; color: #999; }
+.my-items {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.my-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  font-size: 13px;
+  color: #333;
+}
+.my-item-icon { font-size: 18px; }
+.my-item-arrow { margin-left: auto; color: #ccc; font-size: 14px; }
+
+/* Full opt5 my page */
+.phone-opt5 .my-header { padding: 16px 18px; }
+.phone-opt5 .my-avatar {
+  width: 52px; height: 52px;
+  border: 2px solid #e0e0e0;
+}
+.phone-opt5 .my-item {
+  border-radius: 12px;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+
+</style>
+</head>
+<body>
+
+<h1>UI 美化方案预览</h1>
+<p class="subtitle">点击下方按钮切换不同方案 · 模拟安卓手机界面</p>
+
+<div class="tabs">
+  <button class="tab-btn active" data-target="opt0">当前界面</button>
+  <button class="tab-btn" data-target="opt1">方案一：卡片圆角阴影</button>
+  <button class="tab-btn" data-target="opt2">方案二：AppBar渐变</button>
+  <button class="tab-btn" data-target="opt3">方案三：导航栏升级</button>
+  <button class="tab-btn" data-target="opt4">方案四：Feed留白优化</button>
+  <button class="tab-btn" data-target="opt5">方案五：全面美化</button>
+</div>
+
+<!-- ====== Option 0: Current ====== -->
+<div class="phone-wrap show" id="opt0">
+  <div class="phone-label">当前界面（未美化）</div>
+  <div class="phone phone-before">
+    <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+    <div class="appbar">
+      <div class="tab-scroll" style="flex:1">
+        <div class="tab-item">关注</div>
+        <div class="tab-item">APP</div>
+        <div class="tab-item active">头条 <div class="indicator"></div></div>
+        <div class="tab-item">热榜</div>
+        <div class="tab-item">话题</div>
+        <div class="tab-item">产品</div>
+        <div class="tab-item">酷图</div>
+      </div>
+      <div class="appbar-actions">
+        <div class="icon-btn">🔍</div>
+      </div>
+    </div>
+    <div class="feed-list">
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar">张</div>
+          <div><div class="username">张三</div><div class="meta">1小时前 · 小米14</div></div>
+        </div>
+        <div class="feed-title">今天分享一个好用的工具</div>
+        <div class="feed-text">这个工具非常实用，推荐大家试试，可以大大提升日常开发效率...</div>
+        <div class="feed-image"></div>
+        <div class="feed-footer"><span>👍 128</span><span>💬 32</span><span>↗ 分享</span></div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">李</div>
+          <div><div class="username">李四</div><div class="meta">3小时前 · iPhone 15</div></div>
+        </div>
+        <div class="feed-text">周末去爬山了，风景非常不错，分享几张照片给大家看看...</div>
+        <div class="feed-image" style="background:linear-gradient(135deg,#a8edea,#fed6e3)"></div>
+        <div class="feed-footer"><span>👍 56</span><span>💬 12</span><span>↗ 分享</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><span class="nav-icon">🏠</span>主页</div>
+      <div class="nav-item"><span class="nav-icon">👤</span>我的</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Option 1: Card Rounded + Shadow ====== -->
+<div class="phone-wrap" id="opt1">
+  <div class="phone-label">方案一：卡片圆角 + 柔和阴影</div>
+  <div class="phone phone-opt1">
+    <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+    <div class="appbar">
+      <div class="tab-scroll" style="flex:1">
+        <div class="tab-item">关注</div>
+        <div class="tab-item">APP</div>
+        <div class="tab-item active">头条 <div class="indicator"></div></div>
+        <div class="tab-item">热榜</div>
+        <div class="tab-item">话题</div>
+        <div class="tab-item">产品</div>
+        <div class="tab-item">酷图</div>
+      </div>
+      <div class="appbar-actions"><div class="icon-btn">🔍</div></div>
+    </div>
+    <div class="feed-list">
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar">张</div>
+          <div><div class="username">张三</div><div class="meta">1小时前 · 小米14</div></div>
+        </div>
+        <div class="feed-title">今天分享一个好用的工具</div>
+        <div class="feed-text">这个工具非常实用，推荐大家试试，可以大大提升日常开发效率...</div>
+        <div class="feed-image"></div>
+        <div class="feed-footer"><span>👍 128</span><span>💬 32</span><span>↗ 分享</span></div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">李</div>
+          <div><div class="username">李四</div><div class="meta">3小时前 · iPhone 15</div></div>
+        </div>
+        <div class="feed-text">周末去爬山了，风景非常不错，分享几张照片给大家看看...</div>
+        <div class="feed-image" style="background:linear-gradient(135deg,#a8edea,#fed6e3)"></div>
+        <div class="feed-footer"><span>👍 56</span><span>💬 12</span><span>↗ 分享</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><span class="nav-icon">🏠</span>主页</div>
+      <div class="nav-item"><span class="nav-icon">👤</span>我的</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Option 2: AppBar Gradient ====== -->
+<div class="phone-wrap" id="opt2">
+  <div class="phone-label">方案二：AppBar 渐变主题色</div>
+  <div class="phone phone-opt2">
+    <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+    <div class="appbar">
+      <div class="tab-scroll" style="flex:1">
+        <div class="tab-item">关注</div>
+        <div class="tab-item">APP</div>
+        <div class="tab-item active">头条 <div class="indicator"></div></div>
+        <div class="tab-item">热榜</div>
+        <div class="tab-item">话题</div>
+        <div class="tab-item">产品</div>
+        <div class="tab-item">酷图</div>
+      </div>
+      <div class="appbar-actions"><div class="icon-btn" style="color:#fff">🔍</div></div>
+    </div>
+    <div class="feed-list">
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar">张</div>
+          <div><div class="username">张三</div><div class="meta">1小时前 · 小米14</div></div>
+        </div>
+        <div class="feed-title">今天分享一个好用的工具</div>
+        <div class="feed-text">这个工具非常实用，推荐大家试试，可以大大提升日常开发效率...</div>
+        <div class="feed-image"></div>
+        <div class="feed-footer"><span>👍 128</span><span>💬 32</span><span>↗ 分享</span></div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">李</div>
+          <div><div class="username">李四</div><div class="meta">3小时前 · iPhone 15</div></div>
+        </div>
+        <div class="feed-text">周末去爬山了，风景非常不错，分享几张照片给大家看看...</div>
+        <div class="feed-image" style="background:linear-gradient(135deg,#a8edea,#fed6e3)"></div>
+        <div class="feed-footer"><span>👍 56</span><span>💬 12</span><span>↗ 分享</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><span class="nav-icon">🏠</span>主页</div>
+      <div class="nav-item"><span class="nav-icon">👤</span>我的</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Option 3: Bottom Nav Upgrade ====== -->
+<div class="phone-wrap" id="opt3">
+  <div class="phone-label">方案三：底部导航栏升级</div>
+  <div class="phone phone-opt3">
+    <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+    <div class="appbar">
+      <div class="tab-scroll" style="flex:1">
+        <div class="tab-item">关注</div>
+        <div class="tab-item">APP</div>
+        <div class="tab-item active">头条 <div class="indicator"></div></div>
+        <div class="tab-item">热榜</div>
+        <div class="tab-item">话题</div>
+        <div class="tab-item">产品</div>
+        <div class="tab-item">酷图</div>
+      </div>
+      <div class="appbar-actions"><div class="icon-btn">🔍</div></div>
+    </div>
+    <div class="feed-list">
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar">张</div>
+          <div><div class="username">张三</div><div class="meta">1小时前 · 小米14</div></div>
+        </div>
+        <div class="feed-title">今天分享一个好用的工具</div>
+        <div class="feed-text">这个工具非常实用，推荐大家试试，可以大大提升日常开发效率...</div>
+        <div class="feed-image"></div>
+        <div class="feed-footer"><span>👍 128</span><span>💬 32</span><span>↗ 分享</span></div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">李</div>
+          <div><div class="username">李四</div><div class="meta">3小时前 · iPhone 15</div></div>
+        </div>
+        <div class="feed-text">周末去爬山了，风景非常不错，分享几张照片给大家看看...</div>
+        <div class="feed-image" style="background:linear-gradient(135deg,#a8edea,#fed6e3)"></div>
+        <div class="feed-footer"><span>👍 56</span><span>💬 12</span><span>↗ 分享</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><span class="nav-icon">🏠</span>主页</div>
+      <div class="nav-item"><span class="nav-icon">👤</span>我的</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Option 4: Feed Card Spacing ====== -->
+<div class="phone-wrap" id="opt4">
+  <div class="phone-label">方案四：Feed 卡片留白优化</div>
+  <div class="phone phone-opt4">
+    <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+    <div class="appbar">
+      <div class="tab-scroll" style="flex:1">
+        <div class="tab-item">关注</div>
+        <div class="tab-item">APP</div>
+        <div class="tab-item active">头条 <div class="indicator"></div></div>
+        <div class="tab-item">热榜</div>
+        <div class="tab-item">话题</div>
+        <div class="tab-item">产品</div>
+        <div class="tab-item">酷图</div>
+      </div>
+      <div class="appbar-actions"><div class="icon-btn">🔍</div></div>
+    </div>
+    <div class="feed-list">
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar">张</div>
+          <div><div class="username">张三</div><div class="meta">1小时前 · 小米14</div></div>
+        </div>
+        <div class="feed-title">今天分享一个好用的工具</div>
+        <div class="feed-text">这个工具非常实用，推荐大家试试，可以大大提升日常开发效率，支持多种格式导出，界面也很友好...</div>
+        <div class="feed-image"></div>
+        <div class="feed-footer"><span>👍 128</span><span>💬 32</span><span>↗ 分享</span></div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">李</div>
+          <div><div class="username">李四</div><div class="meta">3小时前 · iPhone 15</div></div>
+        </div>
+        <div class="feed-text">周末去爬山了，风景非常不错，分享几张照片给大家看看，山顶的视野非常开阔...</div>
+        <div class="feed-image" style="background:linear-gradient(135deg,#a8edea,#fed6e3)"></div>
+        <div class="feed-footer"><span>👍 56</span><span>💬 12</span><span>↗ 分享</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><span class="nav-icon">🏠</span>主页</div>
+      <div class="nav-item"><span class="nav-icon">👤</span>我的</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Option 5: Full Beautification ====== -->
+<div class="phone-wrap" id="opt5">
+  <div class="phone-label">方案五：全面美化（含"我的"页面）</div>
+  <div class="phone phone-opt5" id="phone-opt5-feed">
+    <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+    <div class="appbar">
+      <div class="tab-scroll" style="flex:1">
+        <div class="tab-item">关注</div>
+        <div class="tab-item">APP</div>
+        <div class="tab-item active">头条 <div class="indicator"></div></div>
+        <div class="tab-item">热榜</div>
+        <div class="tab-item">话题</div>
+        <div class="tab-item">产品</div>
+        <div class="tab-item">酷图</div>
+      </div>
+      <div class="appbar-actions"><div class="icon-btn" style="color:#fff">🔍</div></div>
+    </div>
+    <div class="feed-list">
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar">张</div>
+          <div><div class="username">张三</div><div class="meta">1小时前 · 小米14</div></div>
+        </div>
+        <div class="feed-title">今天分享一个好用的工具</div>
+        <div class="feed-text">这个工具非常实用，推荐大家试试，可以大大提升日常开发效率，支持多种格式导出，界面也很友好...</div>
+        <div class="feed-image"></div>
+        <div class="feed-footer"><span>👍 128</span><span>💬 32</span><span>↗ 分享</span></div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">李</div>
+          <div><div class="username">李四</div><div class="meta">3小时前 · iPhone 15</div></div>
+        </div>
+        <div class="feed-text">周末去爬山了，风景非常不错，分享几张照片给大家看看，山顶的视野非常开阔...</div>
+        <div class="feed-image" style="background:linear-gradient(135deg,#a8edea,#fed6e3)"></div>
+        <div class="feed-footer"><span>👍 56</span><span>💬 12</span><span>↗ 分享</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="switchToMy()"><span class="nav-icon">🏠</span>主页</div>
+      <div class="nav-item" onclick="switchToMy()"><span class="nav-icon">👤</span>我的</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const btns = document.querySelectorAll('.tab-btn');
+const wraps = document.querySelectorAll('.phone-wrap');
+btns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    btns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.target;
+    wraps.forEach(w => {
+      w.classList.toggle('show', w.id === target);
+    });
+  });
+});
+
+function switchToMy() {
+  const phone = document.getElementById('phone-opt5-feed');
+  if (phone) {
+    phone.innerHTML = `
+      <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="appbar" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
+        <span style="color:#fff;font-size:17px;font-weight:600;flex:1;margin-left:8px">我的</span>
+        <div class="appbar-actions"><div class="icon-btn" style="color:#fff" onclick="switchToFeed()">⚙️</div></div>
+      </div>
+      <div class="feed-list">
+        <div class="my-header">
+          <div class="my-avatar">张</div>
+          <div class="my-info">
+            <div class="my-name">张三</div>
+            <div class="my-level">Lv.5 · 经验 1280/2000</div>
+            <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px"><div style="width:64%;height:100%;background:#3b82f6;border-radius:2px"></div></div>
+          </div>
+          <span style="color:#999;font-size:18px">⎋</span>
+        </div>
+        <div class="my-items">
+          <div class="my-item"><span class="my-item-icon">📣</span>@我的动态<span class="my-item-arrow">›</span></div>
+          <div class="my-item"><span class="my-item-icon">💬</span>@我的评论<span class="my-item-arrow">›</span></div>
+          <div class="my-item"><span class="my-item-icon">👍</span>我收到的赞<span class="my-item-arrow">›</span></div>
+          <div class="my-item"><span class="my-item-icon">👥</span>好友关注<span class="my-item-arrow">›</span></div>
+          <div class="my-item"><span class="my-item-icon">✉️</span>私信<span class="my-item-arrow">›</span></div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item" onclick="switchToFeed()"><span class="nav-icon">🏠</span>主页</div>
+        <div class="nav-item active" onclick="switchToFeed()"><span class="nav-icon">👤</span>我的</div>
+      </div>
+    `;
+  }
+}
+function switchToFeed() {
+  location.reload();
+}
+</script>
+
+</body>
+</html>
