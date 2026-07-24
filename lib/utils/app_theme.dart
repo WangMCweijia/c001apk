@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// 应用主题系统：
 /// - 方案 C 薄荷玻璃（LIQUID MINT）= 日间模式
@@ -81,11 +82,22 @@ class AppTheme {
           shadowColor: const Color(0x33F4A09C),
           elevation: 0,
         ),
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
           foregroundColor: lightOnSurface,
           elevation: 0,
           centerTitle: false,
+          // 日间浅色 AppBar 背景 → 状态栏图标用深色
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarIconBrightness: Brightness.dark,
+            systemStatusBarContrastEnforced: false,
+            systemNavigationBarContrastEnforced: false,
+          ),
         ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: const Color(0xCCFFFFFF),
@@ -163,11 +175,22 @@ class AppTheme {
           shadowColor: darkGlow(0.1),
           elevation: 0,
         ),
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
           foregroundColor: darkPrimary,
           elevation: 0,
           centerTitle: false,
+          // 夜间深色 AppBar 背景 → 状态栏图标用浅色
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarIconBrightness: Brightness.light,
+            systemStatusBarContrastEnforced: false,
+            systemNavigationBarContrastEnforced: false,
+          ),
         ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: const Color(0xF00F1413),
