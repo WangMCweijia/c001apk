@@ -69,7 +69,8 @@ class FeedCard extends StatelessWidget {
             if (!data.forwardSourceType.isNullOrEmpty)
               _forwardSourceFeed(context),
             if (!data.extraUrl.isNullOrEmpty) _extraUrl(context),
-            if (!data.replyRows.isNullOrEmpty) _hotReply(context),
+            // 动态详情页不在此处渲染热评（主页列表预载数据的 replyRows），
+            // 热评应仅在评论区通过 topReply 显示，避免正文区重复出现
             bottomInfo(context, data, isFeedContent, _onViewFeed, () {
               if (onLike != null) {
                 onLike!(data.id, data.userAction?.like);

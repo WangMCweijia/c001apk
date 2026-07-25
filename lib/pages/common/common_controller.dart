@@ -92,9 +92,15 @@ abstract class CommonController extends GetxController {
   }
 
   Future<void> animateToTop() async {
+    // 标记回顶动画进行中，抑制滚动监听器在此期间折叠胶囊导航
+    returnTopController?.isAnimatingToTop.value = true;
     scrollController?.animToTop();
     returnTopController?.setIndex(999);
     refreshKey?.currentState?.show();
+    // animToTop 动画时长 500ms，结束后恢复滚动监听
+    Future.delayed(const Duration(milliseconds: 550), () {
+      returnTopController?.isAnimatingToTop.value = false;
+    });
   }
 
   void onBlock(dynamic uid) {

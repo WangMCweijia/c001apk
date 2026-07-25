@@ -76,6 +76,11 @@ class _HomeFeedPageState extends State<HomeFeedPage>
 
     // 监听滚动方向控制胶囊导航展开/收起
     _homeFeedController.scrollController?.addListener(() {
+      // 编程式回顶动画期间不处理，避免反向滚动把刚展开的胶囊折叠回去
+      if (_homeFeedController.returnTopController?.isAnimatingToTop.value ==
+          true) {
+        return;
+      }
       final ScrollDirection? direction =
           _homeFeedController.scrollController?.position.userScrollDirection;
       if (direction == ScrollDirection.forward) {

@@ -67,10 +67,7 @@ class FeedController extends CommonController {
 
   /// 处理动态数据：解析 messageRawOutput、补充 picArr、提取字段
   void _processFeedData(Datum data) {
-    // 预加载阶段已解析过 articleList 时跳过重复解析，保证布局一致避免画面跳动
-    if (articleList == null &&
-        data.messageRawOutput != null &&
-        data.messageRawOutput != 'null') {
+    if (data.messageRawOutput != null && data.messageRawOutput != 'null') {
       List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
       articleList = jsonList
           .map((json) => FeedArticle.fromJson(json))
@@ -120,9 +117,28 @@ class FeedController extends CommonController {
           }
         }
       }
+    } else if (articleList == null) {
+      // 无 messageRawOutput（主页列表预加载数据通常如此）：用 message + picArr
+      // 合成 articleList，使详情页预加载即采用 SliverList 布局，与完整数据一致，
+      // 避免评论区加载完后从 FeedCard 切换到 SliverList 导致画面跳动
+      articleList = [];
+      articleImgList = [];
+      if (!data.message.isNullOrEmpty) {
+        articleList!.add(FeedArticle(type: 'text', message: data.message));
+      }
+      if (!data.picArr.isNullOrEmpty) {
+        for (var img in data.picArr!) {
+          articleList!.add(FeedArticle(type: 'image', url: img));
+          articleImgList!.add(img);
+        }
+      }
     }
     if (!data.topReplyRows.isNullOrEmpty) {
       topReply = data.topReplyRows![0];
+    } else if (topReply == null && !data.replyRows.isNullOrEmpty) {
+      // 主页列表预加载数据无 topReplyRows 时，用 replyRows[0]（列表热评）作为热评，
+      // 使评论区在预加载阶段即可显示热评，无需等待评论接口加载完成
+      topReply = data.replyRows![0];
     }
     if (!data.replyMeRows.isNullOrEmpty) {
       _replyMe = data.replyMeRows![0];
@@ -148,13 +164,7 @@ class FeedController extends CommonController {
         GStorage.historyFeed.put(id, getFeed(data));
       }
     }
-    // 有预加载数据时不重置 feedState，避免新数据字段差异导致画面跳动
-    if (preloadedData == null) {
-      feedState.value = response;
-    } else if (response is! Success) {
-      // 拉取失败：评论区展示错误（动态正文保持预加载内容），用户可下拉重试
-      loadingState.value = response;
-    }
+    feedState.value = response;
   }
 
   void onFav() {
@@ -181,8 +191,10 @@ class FeedController extends CommonController {
   void onInit() {
     super.onInit();
     // 预加载：如果有预传递的数据，立即显示避免转圈，然后后台获取最新数据+评论。
-    // 预加载数据如果含有 messageRawOutput 也立即解析 articleList，
-    // 保证与 getFeedData() 返回后布局一致，避免画面跳动。
+    // 预加载数据若无 messageRawOutput，用 message+picArr 合成 articleList，
+    // 保证与 getFeedData() 返回后布局一致（均用 SliverList），避免画面跳动。
+    // topReply 在预加载阶段从 replyRows[0] 兜底设置，评论加载后由 handleResponse
+    // 前置到评论区列表，使热评显示在评论区而非正文区。
     if (preloadedData != null) {
       _processFeedData(preloadedData!);
       feedState.value = LoadingState.success(preloadedData!);
