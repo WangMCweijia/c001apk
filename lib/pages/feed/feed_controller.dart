@@ -67,7 +67,10 @@ class FeedController extends CommonController {
 
   /// 处理动态数据：解析 messageRawOutput、补充 picArr、提取字段
   void _processFeedData(Datum data) {
-    if (data.messageRawOutput != null && data.messageRawOutput != 'null') {
+    // 预加载阶段已解析过 articleList 时跳过重复解析，保证布局一致避免画面跳动
+    if (articleList == null &&
+        data.messageRawOutput != null &&
+        data.messageRawOutput != 'null') {
       List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
       articleList = jsonList
           .map((json) => FeedArticle.fromJson(json))
@@ -145,7 +148,13 @@ class FeedController extends CommonController {
         GStorage.historyFeed.put(id, getFeed(data));
       }
     }
-    feedState.value = response;
+    // 有预加载数据时不重置 feedState，避免新数据字段差异导致画面跳动
+    if (preloadedData == null) {
+      feedState.value = response;
+    } else if (response is! Success) {
+      // 拉取失败：评论区展示错误（动态正文保持预加载内容），用户可下拉重试
+      loadingState.value = response;
+    }
   }
 
   void onFav() {

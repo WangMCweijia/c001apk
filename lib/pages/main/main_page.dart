@@ -55,6 +55,8 @@ class _MainPageState extends State<MainPage> {
 
   /// 点击刷新按钮：返回屏幕顶端并刷新主页信息流
   void _onRefresh() {
+    // 立即展开胶囊导航（转换为 3 按钮），无需等待刷新完成
+    _pageScrollController.setNavExpanded(true);
     // setIndex(998) 触发当前 HomePage feed tab 的 animateToTop（内含 refreshKey.show 刷新）
     _pageScrollController.setIndex(998);
   }
