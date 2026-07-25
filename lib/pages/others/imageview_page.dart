@@ -44,8 +44,17 @@ class _ImageViewPageState extends State<ImageViewPage> {
     _initialPage = initialPage < 0 ? 0 : initialPage;
     _imgList = List.from(Get.arguments['imgList']);
     _heroTag = Get.arguments['heroTag'];
-    // 进入时隐藏状态栏（全屏沉浸）
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // 全屏沉浸：使用 edgeToEdge 透明覆盖，避免 immersiveSticky 拦截第一次
+    // 边缘返回手势（后者会把首次返回用来退出沉浸模式而非退出页面）
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ));
     // 重置抛物线方向，点击退出走直线 Hero
     ImageViewPage.heroParallaxDirection = 0;
   }
@@ -75,10 +84,13 @@ class _ImageViewPageState extends State<ImageViewPage> {
         systemStatusBarContrastEnforced: false,
         systemNavigationBarContrastEnforced: false,
       ),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        extendBodyBehindAppBar: true,
-        body: Stack(
+      child: PopScope(
+        // 允许一次边缘返回手势直接退出，不拦截
+        canPop: true,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          extendBodyBehindAppBar: true,
+          body: Stack(
             alignment: Alignment.center,
             children: [
               GestureDetector(
@@ -265,6 +277,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
               ),
             ],
           ),
+        ),
       ),
     );
   }
