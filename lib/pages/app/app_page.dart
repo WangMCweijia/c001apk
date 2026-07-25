@@ -110,7 +110,9 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
   }
 
   /// 点击胶囊刷新按钮：回到顶部并刷新当前 tab
+  /// 点击瞬间立即展开为发布按钮，无需等待刷新完成
   void _onAppRefresh() {
+    _returnTopController.setNavExpanded(true);
     _returnTopController.setIndex(_tabController.index);
   }
 

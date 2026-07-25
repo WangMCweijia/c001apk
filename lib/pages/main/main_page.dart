@@ -170,13 +170,10 @@ class _MainPageState extends State<MainPage> {
       // 收起态仅在主页 tab 才可刷新
       final canRefresh = _selectedIndex == 0;
 
-      final BoxDecoration capsuleDecoration = BoxDecoration(
-        color: isDark ? AppTheme.darkCardBg : Colors.white,
+      // 阴影与背景分离：阴影放在外层固定圆角容器，避免 AnimatedSize
+      // 过渡期间阴影呈现方形外框
+      final BoxDecoration shadowDecoration = BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
             color: isDark
@@ -186,6 +183,14 @@ class _MainPageState extends State<MainPage> {
             offset: const Offset(0, 4),
           ),
         ],
+      );
+      final BoxDecoration capsuleDecoration = BoxDecoration(
+        color: isDark ? AppTheme.darkCardBg : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
+          width: 1,
+        ),
       );
 
       // 展开态：主页 | 分隔线 | 我的 | 分隔线 | 发布
@@ -240,15 +245,18 @@ class _MainPageState extends State<MainPage> {
                   onTap: () => onDestinationSelected(1),
                 ));
 
-      return AnimatedSize(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOutCubic,
-        alignment: Alignment.centerRight,
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          decoration: capsuleDecoration,
-          child: capsuleChild,
+      return DecoratedBox(
+        decoration: shadowDecoration,
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeInOutCubic,
+          alignment: Alignment.centerRight,
+          child: Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            decoration: capsuleDecoration,
+            child: capsuleChild,
+          ),
         ),
       );
     });

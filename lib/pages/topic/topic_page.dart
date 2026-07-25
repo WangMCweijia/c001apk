@@ -114,8 +114,10 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
   }
 
   /// 点击胶囊刷新按钮：回到顶部并刷新当前 tab
+  /// 点击瞬间立即展开为发布按钮，无需等待刷新完成
   void _onTopicRefresh() {
     if (_tabController != null) {
+      _pageScrollController.setNavExpanded(true);
       _pageScrollController.setIndex(_tabController!.index);
     }
   }

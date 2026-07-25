@@ -74,6 +74,10 @@ class _AppContentState extends State<AppContent>
 
     // 监听滚动方向控制胶囊导航展开/收起
     _appController.scrollController?.addListener(() {
+      // 编程式回顶动画期间不处理，避免反向滚动把刚展开的胶囊折叠回去
+      if (_appController.returnTopController?.isAnimatingToTop.value == true) {
+        return;
+      }
       final ScrollDirection? direction =
           _appController.scrollController?.position.userScrollDirection;
       if (direction == ScrollDirection.forward) {
