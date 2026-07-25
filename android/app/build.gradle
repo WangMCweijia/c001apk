@@ -56,6 +56,12 @@ android {
         all {
             signingConfig _storeFile != null ? signingConfigs.release : signingConfigs.debug
         }
+        release {
+            // 压缩 APK：开启代码混淆与资源压缩
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
     }
 }
 
