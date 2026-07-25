@@ -156,7 +156,7 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  /// 胶囊悬浮导航按钮：始终三按钮布局，最右边按钮在发布/刷新间切换
+  /// 胶囊悬浮导航按钮：展开=主页/我的/发布三按钮，收起=仅刷新按钮（占据发布位置）
   Widget _buildCapsuleNav(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Obx(() {
@@ -168,56 +168,85 @@ class _MainPageState extends State<MainPage> {
       // 收起态仅在主页 tab 才可刷新
       final canRefresh = _selectedIndex == 0;
 
-      return Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        decoration: BoxDecoration(
-          color: isDark ? AppTheme.darkCardBg : Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: isDark
-                ? AppTheme.darkCardBorder
-                : AppTheme.lightCardBorder,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? AppTheme.darkGlow(0.18)
-                  : Colors.black.withValues(alpha: 0.12),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
+      final BoxDecoration capsuleDecoration = BoxDecoration(
+        color: isDark ? AppTheme.darkCardBg : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
+          width: 1,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _capsuleIconButton(
-              icon: _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
-              label: '主页',
-              selected: _selectedIndex == 0,
-              isDark: isDark,
-              onTap: () => onDestinationSelected(0),
-            ),
-            _capsuleDivider(isDark),
-            _capsuleIconButton(
-              icon: _selectedIndex == 1 ? Icons.person : Icons.person_outline,
-              label: '我的',
-              selected: _selectedIndex == 1,
-              isDark: isDark,
-              onTap: () => onDestinationSelected(1),
-            ),
-            if (isLogin) ...[
-              _capsuleDivider(isDark),
-              // 最右边按钮：展开=发布，收起=刷新（占据发布按钮位置）
-              _capsuleActionButton(
-                isDark: isDark,
-                isExpanded: isExpanded,
-                canRefresh: canRefresh,
-              ),
-            ],
-          ],
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? AppTheme.darkGlow(0.18)
+                : Colors.black.withValues(alpha: 0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      );
+
+      // 展开态：主页 | 分隔线 | 我的 | 分隔线 | 发布
+      // 收起态：仅刷新按钮（占据发布位置，容器宽度收缩）
+      // AnimatedSize 平滑过渡容器宽度，最右边按钮位置自然保持在右侧
+      final Widget capsuleChild = isExpanded
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _capsuleIconButton(
+                  icon: _selectedIndex == 0
+                      ? Icons.home
+                      : Icons.home_outlined,
+                  label: '主页',
+                  selected: _selectedIndex == 0,
+                  isDark: isDark,
+                  onTap: () => onDestinationSelected(0),
+                ),
+                _capsuleDivider(isDark),
+                _capsuleIconButton(
+                  icon: _selectedIndex == 1
+                      ? Icons.person
+                      : Icons.person_outline,
+                  label: '我的',
+                  selected: _selectedIndex == 1,
+                  isDark: isDark,
+                  onTap: () => onDestinationSelected(1),
+                ),
+                if (isLogin) ...[
+                  _capsuleDivider(isDark),
+                  _capsuleActionButton(
+                    isDark: isDark,
+                    isExpanded: true,
+                    canRefresh: canRefresh,
+                  ),
+                ],
+              ],
+            )
+          : (isLogin
+              ? _capsuleActionButton(
+                  isDark: isDark,
+                  isExpanded: false,
+                  canRefresh: canRefresh,
+                )
+              : _capsuleIconButton(
+                  icon: _selectedIndex == 1
+                      ? Icons.person
+                      : Icons.person_outline,
+                  label: '我的',
+                  selected: _selectedIndex == 1,
+                  isDark: isDark,
+                  onTap: () => onDestinationSelected(1),
+                ));
+
+      return AnimatedSize(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOutCubic,
+        alignment: Alignment.centerRight,
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: capsuleDecoration,
+          child: capsuleChild,
         ),
       );
     });

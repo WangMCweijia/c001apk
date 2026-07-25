@@ -74,7 +74,25 @@ class FeedController extends CommonController {
           .where((item) => ['text', 'image', 'shareUrl'].contains(item.type))
           .toList();
       if (!data.title.isNullOrEmpty) {
-        articleList!.insert(0, FeedArticle(type: 'title', title: data.title));
+        // data.title 在酷安中可能是"用户名的动态"格式，
+        // 顶栏 header 已显示发布者名字，去掉用户名前缀只保留动态标题
+        String title = data.title!;
+        final uname = data.userInfo?.username ?? data.username;
+        if (uname != null && uname.isNotEmpty) {
+          // 去掉 "用户名的动态" / "用户名: 动态" 等前缀
+          if (title == '$uname的动态' || title == '$uname: 动态') {
+            title = ''; // 纯前缀则不显示标题
+          } else if (title.startsWith('$uname的动态')) {
+            title = title.substring('$uname的动态'.length).trim();
+          } else if (title.startsWith('$uname: ')) {
+            title = title.substring('$uname: '.length).trim();
+          } else if (title.startsWith('$uname：')) {
+            title = title.substring('$uname：'.length).trim();
+          }
+        }
+        if (title.isNotEmpty) {
+          articleList!.insert(0, FeedArticle(type: 'title', title: title));
+        }
       }
       if (!data.messageCover.isNullOrEmpty) {
         articleList!
