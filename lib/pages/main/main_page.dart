@@ -156,11 +156,11 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  /// 胶囊悬浮导航按钮：展开时显示主页/我的/发布三按钮，收起时显示刷新按钮
+  /// 胶囊悬浮导航按钮：始终三按钮布局，最右边按钮在发布/刷新间切换
   Widget _buildCapsuleNav(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Obx(() {
-      // 我的 tab 强制展开；主页 tab 由滚动方向控制
+      // 我的 tab 强制展开（显示发布）；主页 tab 由滚动方向控制
       final isExpanded = _selectedIndex == 1
           ? true
           : _pageScrollController.isNavExpanded.value;
@@ -168,135 +168,132 @@ class _MainPageState extends State<MainPage> {
       // 收起态仅在主页 tab 才可刷新
       final canRefresh = _selectedIndex == 0;
 
-      // 用 AnimatedSize 平滑过渡尺寸，Stack 叠加两个状态淡入淡出
-      // 避免使用 AnimatedCrossFade（其内部方形背景层会产生方形阴影）
-      return AnimatedSize(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOutCubic,
-        alignment: Alignment.center,
-        child: Stack(
-          alignment: Alignment.center,
+      return Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkCardBg : Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: isDark
+                ? AppTheme.darkCardBorder
+                : AppTheme.lightCardBorder,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? AppTheme.darkGlow(0.18)
+                  : Colors.black.withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedOpacity(
-              opacity: isExpanded ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOutCubic,
-              child: IgnorePointer(
-                ignoring: !isExpanded,
-                child: _buildExpandedCapsule(isDark, isLogin),
-              ),
+            _capsuleIconButton(
+              icon: _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
+              label: '主页',
+              selected: _selectedIndex == 0,
+              isDark: isDark,
+              onTap: () => onDestinationSelected(0),
             ),
-            AnimatedOpacity(
-              opacity: isExpanded ? 0.0 : 1.0,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOutCubic,
-              child: IgnorePointer(
-                ignoring: isExpanded,
-                child: _buildCollapsedCapsule(isDark, canRefresh),
-              ),
+            _capsuleDivider(isDark),
+            _capsuleIconButton(
+              icon: _selectedIndex == 1 ? Icons.person : Icons.person_outline,
+              label: '我的',
+              selected: _selectedIndex == 1,
+              isDark: isDark,
+              onTap: () => onDestinationSelected(1),
             ),
+            if (isLogin) ...[
+              _capsuleDivider(isDark),
+              // 最右边按钮：展开=发布，收起=刷新（占据发布按钮位置）
+              _capsuleActionButton(
+                isDark: isDark,
+                isExpanded: isExpanded,
+                canRefresh: canRefresh,
+              ),
+            ],
           ],
         ),
       );
     });
   }
 
-  /// 展开态：胶囊包含主页/我的/发布三按钮
-  Widget _buildExpandedCapsule(bool isDark, bool isLogin) {
+  /// 胶囊分隔线
+  Widget _capsuleDivider(bool isDark) {
     return Container(
-      key: const ValueKey('expanded'),
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCardBg : Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark
-              ? AppTheme.darkCardBorder
-              : AppTheme.lightCardBorder,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? AppTheme.darkGlow(0.18)
-                : Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _capsuleIconButton(
-            icon: _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
-            label: '主页',
-            selected: _selectedIndex == 0,
-            isDark: isDark,
-            onTap: () => onDestinationSelected(0),
-          ),
-          Container(
-            width: 1,
-            height: 24,
-            color: isDark
-                ? AppTheme.darkCardBorder
-                : AppTheme.lightCardBorder,
-          ),
-          _capsuleIconButton(
-            icon: _selectedIndex == 1 ? Icons.person : Icons.person_outline,
-            label: '我的',
-            selected: _selectedIndex == 1,
-            isDark: isDark,
-            onTap: () => onDestinationSelected(1),
-          ),
-          if (isLogin) ...[
-            Container(
-              width: 1,
-              height: 24,
-              color: isDark
-                  ? AppTheme.darkCardBorder
-                  : AppTheme.lightCardBorder,
-            ),
-            _capsulePublishButton(isDark),
-          ],
-        ],
-      ),
+      width: 1,
+      height: 24,
+      color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
     );
   }
 
-  /// 收起态：单个刷新按钮
-  Widget _buildCollapsedCapsule(bool isDark, bool canRefresh) {
-    return Container(
-      key: const ValueKey('collapsed'),
-      height: 56,
-      width: 56,
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCardBg : Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark
-              ? AppTheme.darkCardBorder
-              : AppTheme.lightCardBorder,
-          width: 1,
+  /// 胶囊最右边按钮：发布/刷新切换（图标与文字淡入淡出）
+  Widget _capsuleActionButton({
+    required bool isDark,
+    required bool isExpanded,
+    required bool canRefresh,
+  }) {
+    final activeColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: isExpanded
+          ? _onPublish
+          : (canRefresh ? _onRefresh : null),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeInOutCubic,
+              switchOutCurve: Curves.easeInOutCubic,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.5, end: 1.0).animate(
+                    CurvedAnimation(
+                        parent: animation, curve: Curves.easeInOutCubic),
+                  ),
+                  child: child,
+                ),
+              ),
+              child: Icon(
+                isExpanded
+                    ? Icons.add_circle_rounded
+                    : Icons.refresh_rounded,
+                key: ValueKey(isExpanded ? 'publish' : 'refresh'),
+                size: 22,
+                color: activeColor,
+              ),
+            ),
+            const SizedBox(height: 2),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeInOutCubic,
+              switchOutCurve: Curves.easeInOutCubic,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+              child: Text(
+                isExpanded ? '发布' : '刷新',
+                key: ValueKey(isExpanded ? 'publish_t' : 'refresh_t'),
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1,
+                  color: activeColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? AppTheme.darkGlow(0.18)
-                : Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: IconButton(
-        onPressed: canRefresh ? _onRefresh : null,
-        icon: Icon(
-          Icons.refresh_rounded,
-          color: isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary,
-        ),
-        tooltip: '刷新',
       ),
     );
   }
@@ -334,38 +331,6 @@ class _MainPageState extends State<MainPage> {
                 height: 1,
                 color: selected ? activeColor : inactiveColor,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 胶囊内发布按钮（强调色）
-  Widget _capsulePublishButton(bool isDark) {
-    final activeColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
-    return InkWell(
-      borderRadius: BorderRadius.circular(24),
-      onTap: _onPublish,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_circle_rounded,
-              size: 22,
-              color: activeColor,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '发布',
-              style: TextStyle(
-                fontSize: 10,
-                height: 1,
-                color: activeColor,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ],

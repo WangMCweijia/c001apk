@@ -563,21 +563,20 @@ Widget bottomInfo(
     ),
     child: Row(
       children: [
-        Expanded(
-          flex: 1,
-          child: Text(
-            isFeedContent
-                ? !data.ipLocation.isNullOrEmpty
-                    ? '发布于 ${data.ipLocation}'
-                    : ''
-                : DateUtil.fromToday(data.dateline),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-        ),
+        if (!isFeedContent)
+          Expanded(
+            flex: 1,
+            child: Text(
+              DateUtil.fromToday(data.dateline),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+          )
+        else
+          const Spacer(),
         if (data.replynum != null)
           LikeButton(
             value: data.replynum,
