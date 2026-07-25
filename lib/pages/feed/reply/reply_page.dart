@@ -299,6 +299,20 @@ class _ReplyPageState extends State<ReplyPage>
                           : '发布${widget.title != null ? '于: ${widget.title}' : '动态'}',
                       border: InputBorder.none,
                       hintStyle: const TextStyle(fontSize: 14),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                     ),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),

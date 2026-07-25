@@ -496,7 +496,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                           )
                         : _feedController.feedState.value is Success
                             ? Text(
-                                _feedController.feedTypeName!,
+                                _feedController.feedUsername ?? '',
                                 textAlign: Platform.isIOS
                                     ? TextAlign.center
                                     : TextAlign.start,
