@@ -44,14 +44,14 @@ class _ImageViewPageState extends State<ImageViewPage> {
     _initialPage = initialPage < 0 ? 0 : initialPage;
     _imgList = List.from(Get.arguments['imgList']);
     _heroTag = Get.arguments['heroTag'];
-    // 全屏沉浸：使用 manual + overlays: [] 真正隐藏状态栏与导航栏
-    // （不用 immersiveSticky，后者会被边缘手势自动恢复显示；
-    //  也不用 immersive，会在用户交互后保持显示。manual 模式完全由代码控制，
-    //  不会被边缘返回手势拦截，PopScope 的返回手势仍可直接退出页面）
-    SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.manual,
-      overlays: [],
-    );
+    // 全屏沉浸：使用 immersiveSticky 真正隐藏状态栏与导航栏。
+    // 该模式对应 Android BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE：
+    //   - 默认隐藏系统 bars（状态栏与导航栏）
+    //   - 边缘滑动时 bars 仅短暂出现（自动隐藏），手势仍会传递给应用
+    //   - 因此 PopScope 的左右滑返回手势可一次触发退出，无需两次
+    // 相比之下，manual + overlays:[] 对应 BEHAVIOR_DEFAULT，会吞掉首次
+    // 边缘手势用于恢复 bars，导致需要两次滑动才能返回。
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     // 重置抛物线方向，点击退出走直线 Hero
     ImageViewPage.heroParallaxDirection = 0;
   }
