@@ -384,7 +384,8 @@ class FeedCard extends StatelessWidget {
 
   List<Widget> _message() {
     return [
-      if (!data.messageTitle.isNullOrEmpty)
+      // 动态详情页顶栏已显示发帖人信息，messageTitle（"用户名: 动态"）不再重复
+      if (!isFeedContent && !data.messageTitle.isNullOrEmpty)
         Padding(
           padding: EdgeInsets.only(
             left: isFeedContent ? 16 : 14,
