@@ -28,6 +28,15 @@ class _ImageViewPageState extends State<ImageViewPage> {
   String? _heroTag;
   late final _pageController = PageController(initialPage: _initialPage);
 
+  // 边缘侧滑返回识别：manual + overlays:[] 下系统返回手势会被吞掉，
+  // 这里用 Listener 自行监听边缘水平滑动，主动调用 Get.back() 完成一次返回。
+  // - _edgeSwipeStartX != null 表示当前指针从屏幕左右边缘开始
+  // - _edgeSwipeTriggered 防止一次滑动触发多次返回
+  double? _edgeSwipeStartX;
+  bool _edgeSwipeTriggered = false;
+  static const double _edgeWidth = 24; // 边缘判定宽度（dp）
+  static const double _swipeThreshold = 60; // 触发返回的最小位移（dp）
+
   @override
   void dispose() {
     _currentPageStream.close();
@@ -44,14 +53,15 @@ class _ImageViewPageState extends State<ImageViewPage> {
     _initialPage = initialPage < 0 ? 0 : initialPage;
     _imgList = List.from(Get.arguments['imgList']);
     _heroTag = Get.arguments['heroTag'];
-    // 全屏沉浸：使用 immersiveSticky 真正隐藏状态栏与导航栏。
-    // 该模式对应 Android BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE：
-    //   - 默认隐藏系统 bars（状态栏与导航栏）
-    //   - 边缘滑动时 bars 仅短暂出现（自动隐藏），手势仍会传递给应用
-    //   - 因此 PopScope 的左右滑返回手势可一次触发退出，无需两次
-    // 相比之下，manual + overlays:[] 对应 BEHAVIOR_DEFAULT，会吞掉首次
-    // 边缘手势用于恢复 bars，导致需要两次滑动才能返回。
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // 全屏沉浸：使用 manual + overlays:[] 真正隐藏状态栏与导航栏。
+    // 该模式下系统手势不会唤出 bars（符合"状态栏隐藏"要求），
+    // 但 Android 系统边缘返回手势在沉浸模式下会被吞掉，需要两次才能返回。
+    // 解决方案：用 Listener 自行监听边缘水平滑动，主动调用 Get.back()
+    // 完成一次侧滑返回（见 build 中的 Listener 包裹）。
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [],
+    );
     // 重置抛物线方向，点击退出走直线 Hero
     ImageViewPage.heroParallaxDirection = 0;
   }
@@ -81,10 +91,48 @@ class _ImageViewPageState extends State<ImageViewPage> {
         systemStatusBarContrastEnforced: false,
         systemNavigationBarContrastEnforced: false,
       ),
-      child: PopScope(
-        // 允许一次边缘返回手势直接退出，不拦截
-        canPop: true,
-        child: Scaffold(
+      child: Listener(
+        // translucent 让 Listener 收到指针事件但不阻止 child 接收（PhotoView 缩放/翻页正常）。
+        // Listener 只观察指针事件，不会消费手势，因此不影响现有 GestureDetector 行为。
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (details) {
+          final width = MediaQuery.of(context).size.width;
+          final dx = details.position.dx;
+          // 仅记录从左右边缘开始的触摸
+          if (dx < _edgeWidth || dx > width - _edgeWidth) {
+            _edgeSwipeStartX = dx;
+            _edgeSwipeTriggered = false;
+          } else {
+            _edgeSwipeStartX = null;
+          }
+        },
+        onPointerMove: (details) {
+          if (_edgeSwipeStartX == null || _edgeSwipeTriggered) return;
+          final width = MediaQuery.of(context).size.width;
+          final startX = _edgeSwipeStartX!;
+          final dx = details.position.dx - startX;
+          final isLeftEdge = startX < _edgeWidth;
+          final isRightEdge = startX > width - _edgeWidth;
+          // 左边缘：向右滑动超过阈值；右边缘：向左滑动超过阈值
+          if ((isLeftEdge && dx > _swipeThreshold) ||
+              (isRightEdge && dx < -_swipeThreshold)) {
+            _edgeSwipeTriggered = true;
+            // 侧滑返回走直线 Hero（与点击退出一致）
+            _onExit();
+          }
+        },
+        onPointerUp: (_) {
+          _edgeSwipeStartX = null;
+          _edgeSwipeTriggered = false;
+        },
+        onPointerCancel: (_) {
+          _edgeSwipeStartX = null;
+          _edgeSwipeTriggered = false;
+        },
+        child: PopScope(
+          // 允许一次边缘返回手势直接退出，不拦截
+          canPop: true,
+          child: Scaffold(
           backgroundColor: Colors.black,
           extendBodyBehindAppBar: true,
           body: Stack(
@@ -275,6 +323,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
