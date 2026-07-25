@@ -171,8 +171,9 @@ class _MainPageState extends State<MainPage> {
       // 用 AnimatedCrossFade 让尺寸与透明度同步过渡，避免跳动
       return AnimatedCrossFade(
         duration: const Duration(milliseconds: 280),
+        firstCurve: Curves.easeInOutCubic,
+        secondCurve: Curves.easeInOutCubic,
         sizeCurve: Curves.easeInOutCubic,
-        opacityCurve: Curves.easeInOutCubic,
         alignment: Alignment.center,
         crossFadeState: isExpanded
             ? CrossFadeState.showFirst
