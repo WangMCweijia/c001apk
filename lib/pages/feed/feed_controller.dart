@@ -67,7 +67,7 @@ class FeedController extends CommonController {
 
   /// 处理动态数据：解析 messageRawOutput、补充 picArr、提取字段
   void _processFeedData(Datum data) {
-    if (data.messageRawOutput != 'null') {
+    if (data.messageRawOutput != null && data.messageRawOutput != 'null') {
       List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
       articleList = jsonList
           .map((json) => FeedArticle.fromJson(json))
@@ -153,9 +153,10 @@ class FeedController extends CommonController {
   @override
   void onInit() {
     super.onInit();
-    // 预加载：如果有预传递的数据，立即显示避免转圈，然后后台获取最新数据+评论
+    // 预加载：如果有预传递的数据，立即显示避免转圈，然后后台获取最新数据+评论。
+    // 注意：预加载数据来自首页列表，可能缺少 messageRawOutput，因此不在此解析
+    // articleList；待 getFeedData() 返回完整数据后再解析。
     if (preloadedData != null) {
-      _processFeedData(preloadedData!);
       feedState.value = LoadingState.success(preloadedData!);
       getFeedData();
     } else {

@@ -13,28 +13,25 @@ import '../../utils/utils.dart';
 class ImageViewPage extends StatefulWidget {
   const ImageViewPage({super.key});
 
+  // Hero 飞行时的抛物线方向（供缩略图侧 flightShuttleBuilder 读取）：
+  // 0 = 无（点击退出，直线飞回），-1 = 向上抛物线，1 = 向下抛物线
+  static int heroParallaxDirection = 0;
+
   @override
   State<ImageViewPage> createState() => _ImageViewPageState();
 }
 
-class _ImageViewPageState extends State<ImageViewPage>
-    with SingleTickerProviderStateMixin {
+class _ImageViewPageState extends State<ImageViewPage> {
   late int _initialPage;
   final _currentPageStream = StreamController<int>();
   late List<String> _imgList;
   String? _heroTag;
   late final _pageController = PageController(initialPage: _initialPage);
 
-  // 滑动退出动画
-  late final AnimationController _exitController;
-  int _exitDirection = 0; // 0 = 无, -1 = 向上, 1 = 向下
-  bool _heroDisabled = false; // 滑动退出时禁用 Hero
-
   @override
   void dispose() {
     _currentPageStream.close();
     _pageController.dispose();
-    _exitController.dispose();
     // 退出时恢复状态栏
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -49,33 +46,24 @@ class _ImageViewPageState extends State<ImageViewPage>
     _heroTag = Get.arguments['heroTag'];
     // 进入时隐藏状态栏（全屏沉浸）
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _exitController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
+    // 重置抛物线方向，点击退出走直线 Hero
+    ImageViewPage.heroParallaxDirection = 0;
   }
 
-  /// 点击退出（Hero 动画返回缩略图）
+  /// 点击退出（Hero 动画直线返回缩略图）
   void _onExit() {
+    ImageViewPage.heroParallaxDirection = 0;
     Get.back();
   }
 
-  /// 上滑/下滑退出（抛物线动画）
+  /// 上滑/下滑退出（Hero 动画 + 抛物线飞行轨迹）
   void _onSwipeExit(int direction) {
-    if (_exitController.isAnimating) return;
-    // 禁用 Hero，避免与滑动退出动画冲突
-    setState(() {
-      _heroDisabled = true;
-      _exitDirection = direction;
-    });
-    _exitController.forward().then((_) {
-      Get.back();
-    });
+    ImageViewPage.heroParallaxDirection = direction;
+    Get.back();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -90,24 +78,7 @@ class _ImageViewPageState extends State<ImageViewPage>
       child: Scaffold(
         backgroundColor: Colors.black,
         extendBodyBehindAppBar: true,
-        body: AnimatedBuilder(
-          animation: _exitController,
-          builder: (context, child) {
-            if (_exitDirection == 0 || !_exitController.isAnimating) {
-              return child!;
-            }
-            // 抛物线效果：加速位移 + 淡出
-            final t = _exitController.value;
-            // easeIn 曲线模拟抛物线加速
-            final curved = Curves.easeInCubic.transform(t);
-            final dy = _exitDirection * curved * screenHeight * 1.3;
-            final opacity = 1.0 - t;
-            return Transform.translate(
-              offset: Offset(0, dy),
-              child: Opacity(opacity: opacity.clamp(0.0, 1.0), child: child),
-            );
-          },
-          child: Stack(
+        body: Stack(
             alignment: Alignment.center,
             children: [
               GestureDetector(
@@ -187,8 +158,8 @@ class _ImageViewPageState extends State<ImageViewPage>
                   ),
                   scrollPhysics: const BouncingScrollPhysics(),
                   builder: (BuildContext context, int index) {
-                    // 只有当前页设置 Hero tag，且滑动退出时禁用
-                    final activeTag = (!_heroDisabled && index == _initialPage)
+                    // 只有当前页设置 Hero tag，确保退出时返回对应缩略图
+                    final activeTag = index == _initialPage
                         ? (_heroTag ?? _imgList[index])
                         : null;
                     return PhotoViewGalleryPageOptions(
@@ -294,7 +265,6 @@ class _ImageViewPageState extends State<ImageViewPage>
               ),
             ],
           ),
-        ),
       ),
     );
   }

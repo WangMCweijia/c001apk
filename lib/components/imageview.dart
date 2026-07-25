@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import '../components/nine_grid_view.dart';
 import '../constants/constants.dart';
+import '../pages/others/imageview_page.dart';
 import '../utils/imageview_route.dart';
 import '../utils/utils.dart';
 
@@ -56,6 +57,29 @@ Widget image(
         },
         child: Hero(
           tag: imgUrl,
+          // 自定义 Hero 飞行：滑动退出时按方向做抛物线偏移，点击退出走直线
+          flightShuttleBuilder:
+              (context, animation, direction, fromContext, toContext) {
+            final isPop = direction == HeroFlightDirection.pop;
+            final Hero heroWidget =
+                (isPop ? fromContext.widget : toContext.widget) as Hero;
+            return AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                final t = animation.value;
+                // 抛物线：4t(1-t)，在 t=0.5 时最大为 1，两端为 0
+                final parabola = 4 * t * (1 - t);
+                final dy = isPop
+                    ? ImageViewPage.heroParallaxDirection * parabola * 120
+                    : 0.0;
+                return Transform.translate(
+                  offset: Offset(0, dy),
+                  child: child,
+                );
+              },
+              child: heroWidget.child,
+            );
+          },
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
