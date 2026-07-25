@@ -168,18 +168,35 @@ class _MainPageState extends State<MainPage> {
       // 收起态仅在主页 tab 才可刷新
       final canRefresh = _selectedIndex == 0;
 
-      // 用 AnimatedCrossFade 让尺寸与透明度同步过渡，避免跳动
-      return AnimatedCrossFade(
+      // 用 AnimatedSize 平滑过渡尺寸，Stack 叠加两个状态淡入淡出
+      // 避免使用 AnimatedCrossFade（其内部方形背景层会产生方形阴影）
+      return AnimatedSize(
         duration: const Duration(milliseconds: 280),
-        firstCurve: Curves.easeInOutCubic,
-        secondCurve: Curves.easeInOutCubic,
-        sizeCurve: Curves.easeInOutCubic,
+        curve: Curves.easeInOutCubic,
         alignment: Alignment.center,
-        crossFadeState: isExpanded
-            ? CrossFadeState.showFirst
-            : CrossFadeState.showSecond,
-        firstChild: _buildExpandedCapsule(isDark, isLogin),
-        secondChild: _buildCollapsedCapsule(isDark, canRefresh),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedOpacity(
+              opacity: isExpanded ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOutCubic,
+              child: IgnorePointer(
+                ignoring: !isExpanded,
+                child: _buildExpandedCapsule(isDark, isLogin),
+              ),
+            ),
+            AnimatedOpacity(
+              opacity: isExpanded ? 0.0 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOutCubic,
+              child: IgnorePointer(
+                ignoring: isExpanded,
+                child: _buildCollapsedCapsule(isDark, canRefresh),
+              ),
+            ),
+          ],
+        ),
       );
     });
   }
