@@ -21,3 +21,18 @@
 -keepclassmembers class * {
     public <init>(...);
 }
+
+# Flutter 引擎引用了 Play Core（动态分发）相关类，但本项目未引入
+# play core 依赖，R8 报缺失类错误。按 R8 missing_rules.txt 推荐格式添加
+# missing 类的 keep 规则（仅声明存在，不会因找不到而报错）。
+-keep class com.google.android.play.core.splitcompat.SplitCompatApplication {
+    <init>();
+}
+-keep class com.google.android.play.core.splitinstall.SplitInstallException {
+    <init>(...);
+}
+-keep class com.google.android.play.core.tasks.OnFailureListener {
+    <init>();
+}
+-dontwarn com.google.android.play.core.**
+
