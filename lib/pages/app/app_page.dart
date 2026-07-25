@@ -109,6 +109,82 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
     return const CircularProgressIndicator();
   }
 
+  /// 点击胶囊刷新按钮：回到顶部并刷新当前 tab
+  void _onAppRefresh() {
+    _returnTopController.setIndex(_tabController.index);
+  }
+
+  /// 点击胶囊发布按钮
+  void _onAppPublish(AppController controller) {
+    Navigator.of(context).push(
+      GetDialogRoute(
+        pageBuilder: (buildContext, animation, secondaryAnimation) {
+          return ReplyPage(
+            title: controller.appName,
+            targetType: 'apk',
+            targetId:
+                '${1000000000 + int.parse(controller.id ?? '4599')}',
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+        transitionBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.linear;
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  /// 胶囊悬浮按钮：展开=发布，收起=刷新
+  Widget _buildAppCapsule(BuildContext context, AppController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Obx(() {
+      final isExpanded = _returnTopController.isNavExpanded.value;
+      final activeColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        switchInCurve: Curves.easeInOutCubic,
+        switchOutCurve: Curves.easeInOutCubic,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.7, end: 1.0).animate(
+              CurvedAnimation(
+                  parent: animation, curve: Curves.easeInOutCubic),
+            ),
+            child: child,
+          ),
+        ),
+        child: isExpanded
+            ? FloatingActionButton(
+                key: const ValueKey('publish'),
+                heroTag: null,
+                onPressed: () => _onAppPublish(controller),
+                tooltip: 'Create Feed',
+                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
+                foregroundColor: activeColor,
+                child: const Icon(Icons.add),
+              )
+            : FloatingActionButton(
+                key: const ValueKey('refresh'),
+                heroTag: null,
+                onPressed: _onAppRefresh,
+                tooltip: 'Refresh',
+                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
+                foregroundColor: activeColor,
+                child: const Icon(Icons.refresh_rounded),
+              ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder(
@@ -126,51 +202,7 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
                   GlobalData().isLogin &&
                   !controller.isBlocked &&
                   controller.commentStatus == 1
-              ? FloatingActionButton(
-                  heroTag: null,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      GetDialogRoute(
-                        pageBuilder:
-                            (buildContext, animation, secondaryAnimation) {
-                          return ReplyPage(
-                            title: controller.appName,
-                            targetType: 'apk',
-                            targetId:
-                                '${1000000000 + int.parse(controller.id ?? '4599')}',
-                          );
-                        },
-                        transitionDuration: const Duration(milliseconds: 500),
-                        transitionBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                          const begin = Offset(0.0, 1.0);
-                          const end = Offset.zero;
-                          const curve = Curves.linear;
-
-                          var tween = Tween(begin: begin, end: end)
-                              .chain(CurveTween(curve: curve));
-
-                          return SlideTransition(
-                            position: animation.drive(tween),
-                            child: child,
-                          );
-                        },
-                      ),
-                    );
-                    // showModalBottomSheet<dynamic>(
-                    //   context: context,
-                    //   isScrollControlled: true,
-                    //   builder: (context) => ReplyDialog(
-                    //     title: controller.appName,
-                    //     targetType: 'apk',
-                    //     targetId:
-                    //         '${1000000000 + int.parse(controller.id ?? '4599')}',
-                    //   ),
-                    // );
-                  },
-                  tooltip: 'Create Feed',
-                  child: const Icon(Icons.add),
-                )
+              ? _buildAppCapsule(context, controller)
               : const SizedBox(),
         ),
         appBar: PreferredSize(

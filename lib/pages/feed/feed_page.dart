@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -44,8 +43,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   AnimationController? _fabAnimationCtr;
   late bool _isFabVisible = true;
   late final _scrollController = ScrollController();
-  late final StreamController<bool> _titleStreamC = StreamController<bool>();
-  late bool _visibleTitle = false;
 
   @override
   void initState() {
@@ -82,7 +79,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _titleStreamC.close();
     _scrollController.removeListener(() {});
     _scrollController.dispose();
     _fabAnimationCtr?.dispose();
@@ -142,6 +138,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             ? FeedCard(
                 data: feedState.response!,
                 isFeedContent: true,
+                showHeader: false,
                 onLike: (id, like) {
                   if (GlobalData().isLogin) {
                     _feedController.onLike(
@@ -153,15 +150,9 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 },
               )
             : SliverList.separated(
-                itemCount: _feedController.articleList!.length + 2,
+                itemCount: _feedController.articleList!.length + 1,
                 itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return header(
-                      context,
-                      feedState.response!,
-                      true,
-                    );
-                  } else if (index == _feedController.articleList!.length + 1) {
+                  if (index == _feedController.articleList!.length) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: bottomInfo(
@@ -186,7 +177,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                     return LayoutBuilder(builder: (_, constraints) {
                       return feedArticleBody(
                         constraints.maxWidth,
-                        _feedController.articleList![index - 1],
+                        _feedController.articleList![index],
                         _feedController.articleImgList!,
                       );
                     });
@@ -474,38 +465,26 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               ),
             ),
             titleSpacing: 0,
-            title: StreamBuilder(
-              stream: _titleStreamC.stream,
-              builder: (context, snapshot) {
-                return GestureDetector(
-                  onTap: () {
-                    if (_scrollController.offset != 0) {
-                      _scrollController.animToTop();
-                    }
-                  },
-                  child: Container(
-                    color: Colors.transparent,
-                    width: double.infinity,
-                    child: snapshot.data == true
-                        ? header(
-                            context,
-                            (_feedController.feedState.value as Success)
-                                .response,
-                            true,
-                            isHeader: true,
-                          )
-                        : _feedController.feedState.value is Success
-                            ? Text(
-                                _feedController.feedUsername ?? '',
-                                textAlign: Platform.isIOS
-                                    ? TextAlign.center
-                                    : TextAlign.start,
-                              )
-                            : null,
-                  ),
-                );
-              },
-            ),
+            title: _feedController.feedState.value is Success
+                ? GestureDetector(
+                    onTap: () {
+                      if (_scrollController.offset != 0) {
+                        _scrollController.animToTop();
+                      }
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      width: double.infinity,
+                      child: header(
+                        context,
+                        (_feedController.feedState.value as Success)
+                            .response,
+                        true,
+                        isHeader: true,
+                      ),
+                    ),
+                  )
+                : null,
             actions: _feedController.feedState.value is Success
                 ? [
                     PopupMenuButton(
@@ -571,14 +550,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         () => _feedController.feedState.value is Success
             ? RefreshIndicator(
                 notificationPredicate: (notification) {
-                  final double offset = notification.metrics.pixels;
-                  if (offset > 50 && !_visibleTitle) {
-                    _visibleTitle = true;
-                    _titleStreamC.add(true);
-                  } else if (offset <= 50 && _visibleTitle) {
-                    _visibleTitle = false;
-                    _titleStreamC.add(false);
-                  }
                   return notification.depth == 0;
                 },
                 key: _refreshKey,

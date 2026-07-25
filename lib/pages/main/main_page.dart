@@ -141,7 +141,7 @@ class _MainPageState extends State<MainPage> {
                     ),
                     if (isPortrait)
                       Positioned(
-                        left: 16,
+                        right: 16,
                         bottom: 16 + MediaQuery.of(context).padding.bottom,
                         child: _buildCapsuleNav(context),
                       ),
@@ -165,30 +165,20 @@ class _MainPageState extends State<MainPage> {
           ? true
           : _pageScrollController.isNavExpanded.value;
       final isLogin = GlobalData().isLogin;
-      // 收起态仅在主页 tab 且登录时才可刷新
+      // 收起态仅在主页 tab 才可刷新
       final canRefresh = _selectedIndex == 0;
 
-      return AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeInOutCubic,
-        switchOutCurve: Curves.easeInOutCubic,
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.85, end: 1.0).animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOutCubic,
-                ),
-              ),
-              child: child,
-            ),
-          );
-        },
-        child: isExpanded
-            ? _buildExpandedCapsule(isDark, isLogin)
-            : _buildCollapsedCapsule(isDark, canRefresh),
+      // 用 AnimatedCrossFade 让尺寸与透明度同步过渡，避免跳动
+      return AnimatedCrossFade(
+        duration: const Duration(milliseconds: 280),
+        sizeCurve: Curves.easeInOutCubic,
+        opacityCurve: Curves.easeInOutCubic,
+        alignment: Alignment.center,
+        crossFadeState: isExpanded
+            ? CrossFadeState.showFirst
+            : CrossFadeState.showSecond,
+        firstChild: _buildExpandedCapsule(isDark, isLogin),
+        secondChild: _buildCollapsedCapsule(isDark, canRefresh),
       );
     });
   }

@@ -113,6 +113,85 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
     return const CircularProgressIndicator();
   }
 
+  /// 点击胶囊刷新按钮：回到顶部并刷新当前 tab
+  void _onTopicRefresh() {
+    if (_tabController != null) {
+      _pageScrollController.setIndex(_tabController!.index);
+    }
+  }
+
+  /// 点击胶囊发布按钮
+  void _onTopicPublish() {
+    Navigator.of(context).push(
+      GetDialogRoute(
+        pageBuilder: (buildContext, animation, secondaryAnimation) {
+          return ReplyPage(
+            targetType: _topicController.entityType == 'topic'
+                ? 'tag'
+                : 'product_phone',
+            targetId: _topicController.id,
+            title: _topicController.title,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+        transitionBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.linear;
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  /// 胶囊悬浮按钮：展开=发布，收起=刷新
+  Widget _buildTopicCapsule(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Obx(() {
+      final isExpanded = _pageScrollController.isNavExpanded.value;
+      final activeColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        switchInCurve: Curves.easeInOutCubic,
+        switchOutCurve: Curves.easeInOutCubic,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.7, end: 1.0).animate(
+              CurvedAnimation(
+                  parent: animation, curve: Curves.easeInOutCubic),
+            ),
+            child: child,
+          ),
+        ),
+        child: isExpanded
+            ? FloatingActionButton(
+                key: const ValueKey('publish'),
+                heroTag: null,
+                onPressed: _onTopicPublish,
+                tooltip: 'Create Feed',
+                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
+                foregroundColor: activeColor,
+                child: const Icon(Icons.add),
+              )
+            : FloatingActionButton(
+                key: const ValueKey('refresh'),
+                heroTag: null,
+                onPressed: _onTopicRefresh,
+                tooltip: 'Refresh',
+                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
+                foregroundColor: activeColor,
+                child: const Icon(Icons.refresh_rounded),
+              ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(
@@ -120,55 +199,7 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
           ? Scaffold(
               floatingActionButton: GlobalData().isLogin &&
                       !_topicController.isBlocked
-                  ? FloatingActionButton(
-                      heroTag: null,
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          GetDialogRoute(
-                            pageBuilder:
-                                (buildContext, animation, secondaryAnimation) {
-                              return ReplyPage(
-                                targetType:
-                                    _topicController.entityType == 'topic'
-                                        ? 'tag'
-                                        : 'product_phone',
-                                targetId: _topicController.id,
-                                title: _topicController.title,
-                              );
-                            },
-                            transitionDuration:
-                                const Duration(milliseconds: 500),
-                            transitionBuilder: (context, animation,
-                                secondaryAnimation, child) {
-                              const begin = Offset(0.0, 1.0);
-                              const end = Offset.zero;
-                              const curve = Curves.linear;
-
-                              var tween = Tween(begin: begin, end: end)
-                                  .chain(CurveTween(curve: curve));
-
-                              return SlideTransition(
-                                position: animation.drive(tween),
-                                child: child,
-                              );
-                            },
-                          ),
-                        );
-                        // showModalBottomSheet<dynamic>(
-                        //   context: context,
-                        //   isScrollControlled: true,
-                        //   builder: (context) => ReplyDialog(
-                        //     targetType: _topicController.entityType == 'topic'
-                        //         ? 'tag'
-                        //         : 'product_phone',
-                        //     targetId: _topicController.id,
-                        //     title: _topicController.title,
-                        //   ),
-                        // );
-                      },
-                      tooltip: 'Create Feed',
-                      child: const Icon(Icons.add),
-                    )
+                  ? _buildTopicCapsule(context)
                   : null,
               appBar: AppTheme.gradientAppBar(
                 context: context,

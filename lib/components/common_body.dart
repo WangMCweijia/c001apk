@@ -31,6 +31,8 @@ Widget commonBody(
             onRefresh: () async {
               commonController.onReset();
               await commonController.onGetData();
+              // 刷新完成后恢复胶囊导航为展开态
+              commonController.returnTopController?.setNavExpanded(true);
             },
             child: buildBody(
               commonController,

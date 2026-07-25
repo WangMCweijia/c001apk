@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide SearchController;
+import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 
 import '../../components/common_body.dart';
@@ -68,6 +69,19 @@ class _TopicContentState extends State<TopicContent>
     _topicController.returnTopController?.index.listen((index) {
       if (index == widget.index) {
         _topicController.animateToTop();
+      }
+    });
+
+    // 监听滚动方向控制胶囊导航展开/收起
+    _topicController.scrollController?.addListener(() {
+      final ScrollDirection? direction =
+          _topicController.scrollController?.position.userScrollDirection;
+      if (direction == ScrollDirection.forward) {
+        // 向下滑动 → 展开为发布按钮
+        _topicController.returnTopController?.setNavExpanded(true);
+      } else if (direction == ScrollDirection.reverse) {
+        // 向上滑动 → 收起为刷新按钮
+        _topicController.returnTopController?.setNavExpanded(false);
       }
     });
 

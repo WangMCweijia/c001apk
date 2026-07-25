@@ -22,6 +22,7 @@ class FeedCard extends StatelessWidget {
     required this.data,
     this.isFeedContent = false,
     this.isHistory = false,
+    this.showHeader = true,
     this.onDelete,
     this.onBlock,
     this.onLike,
@@ -30,6 +31,8 @@ class FeedCard extends StatelessWidget {
   final Datum data;
   final bool isFeedContent;
   final bool isHistory;
+  // 是否显示发帖人 header（动态详情页顶栏已显示时设为 false）
+  final bool showHeader;
   final Function(dynamic id)? onDelete;
   final Function(dynamic uid)? onBlock;
   final Function(dynamic id, dynamic like)? onLike;
@@ -48,18 +51,19 @@ class FeedCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            header(
-              context,
-              data,
-              isFeedContent,
-              isHistory: isHistory,
-              onDelete: onDelete,
-              onBlock: () {
-                if (onBlock != null) {
-                  onBlock!(data.uid);
-                }
-              },
-            ),
+            if (showHeader)
+              header(
+                context,
+                data,
+                isFeedContent,
+                isHistory: isHistory,
+                onDelete: onDelete,
+                onBlock: () {
+                  if (onBlock != null) {
+                    onBlock!(data.uid);
+                  }
+                },
+              ),
             ..._message(),
             if (!data.picArr.isNullOrEmpty) _image(),
             if (!data.forwardSourceType.isNullOrEmpty)
