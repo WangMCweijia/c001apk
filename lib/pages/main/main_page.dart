@@ -261,7 +261,7 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  /// 胶囊最右边按钮：发布/刷新切换（图标与文字淡入淡出）
+  /// 胶囊最右边按钮：发布/刷新切换（图标与文字淡入淡出，无方形背景）
   Widget _capsuleActionButton({
     required bool isDark,
     required bool isExpanded,
@@ -278,47 +278,70 @@ class _MainPageState extends State<MainPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeInOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.5, end: 1.0).animate(
-                    CurvedAnimation(
-                        parent: animation, curve: Curves.easeInOutCubic),
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedOpacity(
+                    opacity: isExpanded ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOutCubic,
+                    child: Icon(
+                      Icons.add_circle_rounded,
+                      size: 22,
+                      color: activeColor,
+                    ),
                   ),
-                  child: child,
-                ),
-              ),
-              child: Icon(
-                isExpanded
-                    ? Icons.add_circle_rounded
-                    : Icons.refresh_rounded,
-                key: ValueKey(isExpanded ? 'publish' : 'refresh'),
-                size: 22,
-                color: activeColor,
+                  AnimatedOpacity(
+                    opacity: isExpanded ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOutCubic,
+                    child: Icon(
+                      Icons.refresh_rounded,
+                      size: 22,
+                      color: activeColor,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 2),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeInOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: child,
-              ),
-              child: Text(
-                isExpanded ? '发布' : '刷新',
-                key: ValueKey(isExpanded ? 'publish_t' : 'refresh_t'),
-                style: TextStyle(
-                  fontSize: 10,
-                  height: 1,
-                  color: activeColor,
-                  fontWeight: FontWeight.w600,
-                ),
+            SizedBox(
+              height: 12,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedOpacity(
+                    opacity: isExpanded ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOutCubic,
+                    child: Text(
+                      '发布',
+                      style: TextStyle(
+                        fontSize: 10,
+                        height: 1,
+                        color: activeColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  AnimatedOpacity(
+                    opacity: isExpanded ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOutCubic,
+                    child: Text(
+                      '刷新',
+                      style: TextStyle(
+                        fontSize: 10,
+                        height: 1,
+                        color: activeColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -8,6 +8,7 @@ import 'package:get/get_navigation/src/dialog/dialog_route.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../components/cards/feed_reply_card.dart';
+import '../../components/cards/icon_mini_scroll_card.dart';
 import '../../components/feed_article_body.dart';
 import '../../components/footer.dart';
 import '../../components/sliver_pinned_box_adapter.dart';
@@ -153,25 +154,63 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 itemCount: _feedController.articleList!.length + 1,
                 itemBuilder: (context, index) {
                   if (index == _feedController.articleList!.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: bottomInfo(
-                        context,
-                        feedState.response!,
-                        true,
-                        null,
-                        isFeedArticle: true,
-                        () {
-                          if (GlobalData().isLogin) {
-                            Datum data = feedState.response;
-                            _feedController.onLike(
-                              data.id,
-                              data.userAction?.like,
-                              isFeed: true,
-                            );
-                          }
-                        },
-                      ),
+                    final Datum data = feedState.response!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: bottomInfo(
+                            context,
+                            data,
+                            true,
+                            null,
+                            isFeedArticle: true,
+                            () {
+                              if (GlobalData().isLogin) {
+                                _feedController.onLike(
+                                  data.id,
+                                  data.userAction?.like,
+                                  isFeed: true,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                        // 关联板块/标签（与 FeedCard._rows 保持一致）
+                        if (data.targetRow != null ||
+                            !data.relationRows.isNullOrEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16),
+                            child: Wrap(
+                              spacing: 5.0,
+                              runSpacing: 5.0,
+                              children: [
+                                if (data.targetRow != null)
+                                  miniCardItem(
+                                    context,
+                                    data.targetRow!.logo!.orEmpty,
+                                    data.targetRow!.title.orEmpty,
+                                    data.targetRow!.url.orEmpty,
+                                    false,
+                                    false,
+                                  ),
+                                if (!data.relationRows.isNullOrEmpty)
+                                  ...data.relationRows!.map(
+                                    (item) => miniCardItem(
+                                      context,
+                                      item.logo.orEmpty,
+                                      item.title.orEmpty,
+                                      item.url.orEmpty,
+                                      false,
+                                      false,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
                     );
                   } else {
                     return LayoutBuilder(builder: (_, constraints) {

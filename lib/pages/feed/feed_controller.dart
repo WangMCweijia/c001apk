@@ -172,9 +172,10 @@ class FeedController extends CommonController {
   void onInit() {
     super.onInit();
     // 预加载：如果有预传递的数据，立即显示避免转圈，然后后台获取最新数据+评论。
-    // 注意：预加载数据来自首页列表，可能缺少 messageRawOutput，因此不在此解析
-    // articleList；待 getFeedData() 返回完整数据后再解析。
+    // 预加载数据如果含有 messageRawOutput 也立即解析 articleList，
+    // 保证与 getFeedData() 返回后布局一致，避免画面跳动。
     if (preloadedData != null) {
+      _processFeedData(preloadedData!);
       feedState.value = LoadingState.success(preloadedData!);
       getFeedData();
     } else {
