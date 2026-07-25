@@ -44,17 +44,14 @@ class _ImageViewPageState extends State<ImageViewPage> {
     _initialPage = initialPage < 0 ? 0 : initialPage;
     _imgList = List.from(Get.arguments['imgList']);
     _heroTag = Get.arguments['heroTag'];
-    // 全屏沉浸：使用 edgeToEdge 透明覆盖，避免 immersiveSticky 拦截第一次
-    // 边缘返回手势（后者会把首次返回用来退出沉浸模式而非退出页面）
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarDividerColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ));
+    // 全屏沉浸：使用 manual + overlays: [] 真正隐藏状态栏与导航栏
+    // （不用 immersiveSticky，后者会被边缘手势自动恢复显示；
+    //  也不用 immersive，会在用户交互后保持显示。manual 模式完全由代码控制，
+    //  不会被边缘返回手势拦截，PopScope 的返回手势仍可直接退出页面）
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [],
+    );
     // 重置抛物线方向，点击退出走直线 Hero
     ImageViewPage.heroParallaxDirection = 0;
   }
