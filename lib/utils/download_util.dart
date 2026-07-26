@@ -117,18 +117,33 @@ class DownloadUtils {
         bool hasMotionXmp = _hasMotionPhotoXmp(bytes);
         String usedUrl = originalUrl;
         // 第二步：若 XMP 标识为实况图但 MP4 段缺失，尝试 URL 变体
+        // 注意：变体只有在确认含 MP4 视频段时才采用，
+        // 否则保留原 URL 的下载结果（即便它是 23KB 静态图，至少保留 XMP 标识
+        // 让用户知道这是实况图但视频被服务端剥离）。
+        // 之前曾"变体体积大就采用"，结果变体返回了 1.34MB 的另一张静态图
+        // （不含 XMP），反而丢失了原 XMP 标识，故改为只接受含 MP4 的变体。
         if (!hasMp4 && hasMotionXmp && originalUrl.endsWith('.jpg')) {
           final List<String> variants = [
             // 1. .motion.jpg 后缀（实况图专用）
             '${originalUrl.substring(0, originalUrl.length - 4)}.motion.jpg',
             // 2. 直接 .mp4 后缀（视频段独立存储）
             '${originalUrl.substring(0, originalUrl.length - 4)}.mp4',
-            // 3. 路径中插入 /motion/
+            // 3. .live.jpg 后缀（另一种可能的实况图命名）
+            '${originalUrl.substring(0, originalUrl.length - 4)}.live.jpg',
+            // 4. .video.jpg 后缀
+            '${originalUrl.substring(0, originalUrl.length - 4)}.video.jpg',
+            // 5. 路径中插入 /motion/
             if (originalUrl.contains('/feed/'))
               originalUrl.replaceFirst('/feed/', '/feed/motion/'),
-            // 4. 添加查询参数 ?type=original
+            // 6. 路径中插入 /video/
+            if (originalUrl.contains('/feed/'))
+              originalUrl.replaceFirst('/feed/', '/feed/video/'),
+            // 7. 添加查询参数 ?type=original
             if (!originalUrl.contains('?'))
               '$originalUrl?type=original',
+            // 8. 添加查询参数 ?motion=1
+            if (!originalUrl.contains('?'))
+              '$originalUrl?motion=1',
           ];
           for (final String tryUrl in variants) {
             try {
@@ -138,7 +153,7 @@ class DownloadUtils {
               final bool bHasXmp = _hasMotionPhotoXmp(b);
               debugPrint(
                   '[download] variant=$tryUrl size=${b.length} hasMp4=$bHasMp4 hasXmp=$bHasXmp');
-              // 找到含 MP4 视频段的变体立即采用
+              // 只采用含 MP4 视频段的变体（不再因体积大就采用）
               if (bHasMp4) {
                 bytes = b;
                 response = r;
@@ -146,14 +161,6 @@ class DownloadUtils {
                 hasMotionXmp = bHasXmp;
                 usedUrl = tryUrl;
                 break;
-              }
-              // 否则取体积最大的变体（可能仍是静态图，但更大说明更接近原图）
-              // 体积明显大于原 URL（如 >100KB）的变体值得采用
-              if (b.length > bytes.length && b.length > 100 * 1024) {
-                bytes = b;
-                response = r;
-                hasMotionXmp = bHasXmp;
-                usedUrl = tryUrl;
               }
             } catch (e) {
               // 候选 URL 失败（404 等），继续尝试下一个
