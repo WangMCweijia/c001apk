@@ -15,6 +15,28 @@ import '../../utils/menu_labels.dart';
 
 enum SearchContentType { FEED, APP, GAME, TOPIC, PRODUCT, USER }
 
+/// SearchContentType 的中文显示名
+/// 原先用 type.name 直接显示英文小写 'feed'/'app'/'game'/'topic'/'product'/'user'
+/// 这里集中维护中文名，便于 TabBar 显示中文
+extension SearchContentTypeX on SearchContentType {
+  String get label {
+    switch (this) {
+      case SearchContentType.FEED:
+        return '动态';
+      case SearchContentType.APP:
+        return '应用';
+      case SearchContentType.GAME:
+        return '游戏';
+      case SearchContentType.TOPIC:
+        return '话题';
+      case SearchContentType.PRODUCT:
+        return '数码';
+      case SearchContentType.USER:
+        return '用户';
+    }
+  }
+}
+
 enum SearchMenuType { Type, Sort }
 
 enum SearchType {
@@ -177,7 +199,7 @@ class _SearchResultPageState extends State<SearchResultPage>
                     AppTheme.appBarForeground(Theme.of(context).brightness),
                 tabs: SearchContentType.values
                     .map((type) => Tab(
-                          text: type.name,
+                          text: type.label,
                         ))
                     .toList(),
                 onTap: (index) {

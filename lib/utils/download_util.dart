@@ -166,8 +166,15 @@ class DownloadUtils {
         hasMotionXmp = _hasMotionPhotoXmp(bytes);
         final int? contentLength = int.tryParse(
             response.headers.value('content-length') ?? '');
+        final String contentType =
+            response.headers.value('content-type') ?? '';
+        // 文件头前 16 字节 hex，便于诊断实际文件格式
+        final String headHex = bytes
+            .take(16)
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join(' ');
         debugPrint(
-            '[download] url=$usedUrl originalUrl=$originalUrl size=${bytes.length} contentLength=$contentLength hasMp4=$hasMp4 hasMotionXmp=$hasMotionXmp');
+            '[download] url=$usedUrl originalUrl=$originalUrl size=${bytes.length} contentLength=$contentLength contentType=$contentType headHex=$headHex hasMp4=$hasMp4 hasMotionXmp=$hasMotionXmp');
         final String picName = originalUrl.split('/').last;
         // 判断变体返回的是否为纯 MP4 视频文件（用于提示与保存路径）
         // MP4 文件起始处有 ftyp box（前 64 字节内）
@@ -262,7 +269,13 @@ class DownloadUtils {
               label = '已保存（实况图静态帧 $sizeStr，视频未下载）';
             }
           } else {
-            label = '已保存（$sizeStr）';
+            // 普通文件：附文件头前 4 字节 hex 帮助诊断格式
+            // 例：ffd8ffe0 = JPEG，00000018 66747970 = MP4，52494646 = WEBP
+            final String shortHex = bytes
+                .take(4)
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join('');
+            label = '已保存（$sizeStr，head=$shortHex）';
           }
           SmartDialog.showToast(label);
         }
