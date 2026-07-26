@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../utils/storage_util.dart';
 import '../utils/utils.dart';
 
 /// From Pilipala
@@ -88,6 +89,9 @@ class DownloadUtils {
 
       SmartDialog.showLoading(msg: '保存中');
       Dio dio = Dio();
+      // 带上官方酷安 UA，避免服务端对非官方客户端返回剥离了视频数据的
+      // 静态 JPEG（实况图 Motion Photo = JPEG + 末尾内嵌 MP4）。
+      dio.options.headers['User-Agent'] = GStorage.userAgent;
       for (int index = 0; index < urlList.length; index++) {
         final Response response = await dio.get(urlList[index],
             options: Options(responseType: ResponseType.bytes));
