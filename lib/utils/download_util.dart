@@ -103,8 +103,9 @@ class DownloadUtils {
         // 诊断：文件末尾是否包含 MP4 ftyp box（Motion Photo 标识）
         // 若包含则下载的是完整实况图，否则服务端返回的是剥离了视频的静态图
         final bool hasMp4 = _hasMp4Trailer(bytes);
+        final bool hasMotionXmp = _hasMotionPhotoXmp(bytes);
         debugPrint(
-            '[download] url=${urlList[index]} size=${bytes.length} hasMp4=$hasMp4');
+            '[download] url=${urlList[index]} size=${bytes.length} hasMp4=$hasMp4 hasMotionXmp=$hasMotionXmp');
         final String picName = urlList[index].split('/').last;
 
         if (Utils.isDesktop) {
@@ -137,8 +138,17 @@ class DownloadUtils {
         if (index == urlList.length - 1) {
           SmartDialog.dismiss();
           final String sizeStr = _formatBytes(bytes.length);
-          SmartDialog.showToast(
-              hasMp4 ? '已保存（实况图 $sizeStr）' : '已保存（$sizeStr）');
+          final String label;
+          if (hasMp4) {
+            // 完整 Motion Photo：JPEG + MP4 视频
+            label = '已保存（实况图 $sizeStr）';
+          } else if (hasMotionXmp) {
+            // XMP 标识为实况图，但 MP4 视频段缺失：服务端剥离了视频数据
+            label = '已保存（实况图静态帧 $sizeStr，视频未下载）';
+          } else {
+            label = '已保存（$sizeStr）';
+          }
+          SmartDialog.showToast(label);
         }
       }
     } catch (err) {
@@ -147,19 +157,52 @@ class DownloadUtils {
     }
   }
 
-  /// 检查字节流末尾是否包含 MP4 ftyp box，判断是否为 Motion Photo 实况图
+  /// 检查字节流中是否包含 MP4 ftyp box，判断是否为 Motion Photo 实况图
   /// Motion Photo = JPEG + 末尾内嵌 MP4，MP4 起始处有 "ftyp" box
   static bool _hasMp4Trailer(List<int> bytes) {
     if (bytes.length < 12) return false;
-    // 在末尾 1MB 范围内搜索 "ftyp" 标识（MP4 文件头特征）
-    final int searchStart =
-        bytes.length > 1024 * 1024 ? bytes.length - 1024 * 1024 : 0;
+    // 定位 JPEG EOI (0xFF 0xD9) 之后的位置：JPEG 数据结束后即为内嵌 MP4
+    // JPEG 中可能含多个 0xFF 0xD9（EXIF 缩略图），取最后一个作为真实 EOI
+    int searchStart = 0;
+    for (int i = bytes.length - 2; i >= 0; i--) {
+      if (bytes[i] == 0xFF && bytes[i + 1] == 0xD9) {
+        searchStart = i + 2;
+        break;
+      }
+    }
+    // 在 JPEG 数据结束后搜索 MP4 ftyp box（Motion Photo 视频段起始）
     // ftyp box 的 ASCII：0x66 0x74 0x79 0x70
+    // 修复：原只在末尾 1MB 搜索，JPEG 较大时 ftyp 不在末尾 1MB 内导致漏判
     for (int i = searchStart; i < bytes.length - 8; i++) {
       if (bytes[i] == 0x66 &&
           bytes[i + 1] == 0x74 &&
           bytes[i + 2] == 0x79 &&
           bytes[i + 3] == 0x70) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// 检查 XMP 元数据中是否包含 Motion Photo 标识
+  /// 即使服务端剥离了 MP4 视频段，XMP 中 "MotionPhoto" 字段通常仍存在
+  /// 据此可判断原图本身是否为实况图（与 hasMp4 区分下载是否完整）
+  static bool _hasMotionPhotoXmp(List<int> bytes) {
+    // XMP 在 JPEG APP1 段中，通常位于文件头部 64KB 内
+    // "MotionPhoto" 的 ASCII：M o t i o n P h o t o
+    final int limit = bytes.length > 65536 ? 65536 : bytes.length;
+    for (int i = 0; i < limit - 11; i++) {
+      if (bytes[i] == 0x4D && // M
+          bytes[i + 1] == 0x6F && // o
+          bytes[i + 2] == 0x74 && // t
+          bytes[i + 3] == 0x69 && // i
+          bytes[i + 4] == 0x6F && // o
+          bytes[i + 5] == 0x6E && // n
+          bytes[i + 6] == 0x50 && // P
+          bytes[i + 7] == 0x68 && // h
+          bytes[i + 8] == 0x6F && // o
+          bytes[i + 9] == 0x74 && // t
+          bytes[i + 10] == 0x6F) { // o
         return true;
       }
     }
