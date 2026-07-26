@@ -117,10 +117,16 @@ class FeedController extends CommonController {
           }
         }
       }
-    } else if (articleList == null) {
+    } else if (articleList == null ||
+        data.messageRawOutput == 'null') {
       // 无 messageRawOutput（主页列表预加载数据通常如此）：用 message + picArr
       // 合成 articleList，使详情页预加载即采用 SliverList 布局，与完整数据一致，
       // 避免评论区加载完后从 FeedCard 切换到 SliverList 导致画面跳动
+      //
+      // 另：当 getFeedData() 返回的完整数据的 messageRawOutput 为 "null" 字符串时，
+      // 上面的 if 分支不进入，原 else if 因 articleList 已被预加载赋值而跳过，
+      // 导致 articleList 停留在预加载的精简内容。这里增加 messageRawOutput == 'null'
+      // 的判断，强制用 message + picArr 重新合成，避免详情页空白。
       articleList = [];
       articleImgList = [];
       if (!data.message.isNullOrEmpty) {

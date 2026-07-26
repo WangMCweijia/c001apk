@@ -38,7 +38,13 @@ class FeedCard extends StatelessWidget {
   final Function(dynamic id, dynamic like)? onLike;
 
   void _onViewFeed() {
-    Get.toNamed('/feed/${data.id}', arguments: {'datum': data});
+    // 浏览历史/收藏列表中的 Datum 是从 FavHistoryItem 精简转换而来，
+    // 缺少 messageRawOutput/picArr/userAction 等字段，作为 preloadedData
+    // 传入会导致详情页预加载阶段显示空白（articleList 为空），且 getFeedData()
+    // 返回完整数据后若 messageRawOutput 为 "null" 字符串，articleList 不会被
+    // 更新，持续空白。浏览历史场景不传 datum，强制走完整网络加载。
+    Get.toNamed('/feed/${data.id}',
+        arguments: isHistory ? null : {'datum': data});
   }
 
   @override
