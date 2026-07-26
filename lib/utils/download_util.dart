@@ -113,7 +113,7 @@ class DownloadUtils {
         // 第一步：用原 URL 下载
         Response response = await fetch(originalUrl);
         List<int> bytes = response.data as List<int>;
-        bool hasMp4 = _hasMp4Trailer(bytes);
+        bool hasMp4 = _hasMp4Trailer(bytes) || _hasMp4MediaBox(bytes);
         bool hasMotionXmp = _hasMotionPhotoXmp(bytes);
         String usedUrl = originalUrl;
         // 第二步：若 XMP 标识为实况图但 MP4 段缺失，尝试 URL 变体
@@ -149,7 +149,8 @@ class DownloadUtils {
             try {
               final Response r = await fetch(tryUrl);
               final List<int> b = r.data as List<int>;
-              final bool bHasMp4 = _hasMp4Trailer(b);
+              // 变体检测也结合 ftyp 和 moov/mdat 两种方式
+              final bool bHasMp4 = _hasMp4Trailer(b) || _hasMp4MediaBox(b);
               final bool bHasXmp = _hasMotionPhotoXmp(b);
               debugPrint(
                   '[download] variant=$tryUrl size=${b.length} hasMp4=$bHasMp4 hasXmp=$bHasXmp');
@@ -169,7 +170,9 @@ class DownloadUtils {
           }
         }
         // 最终基于采用的 bytes 重新计算所有标识，确保 Toast 准确
-        hasMp4 = _hasMp4Trailer(bytes);
+        // hasMp4：先检查 ftyp box（标准 MP4 起始），
+        // 若无再检查 moov/mdat box（后备：某些 MP4 不以 ftyp 开头）
+        hasMp4 = _hasMp4Trailer(bytes) || _hasMp4MediaBox(bytes);
         hasMotionXmp = _hasMotionPhotoXmp(bytes);
         final int? contentLength = int.tryParse(
             response.headers.value('content-length') ?? '');
@@ -293,64 +296,136 @@ class DownloadUtils {
     }
   }
 
+  /// 搜索文件中是否有 moov/mdat box（MP4 必有这两个 box 之一）
+  /// 作为 ftyp 搜索的后备：某些 MP4 可能不以 ftyp 开头，
+  /// 但一定有 moov（元数据）或 mdat（媒体数据）box
+  /// 为避免误判，要求 box size 合理（256 ~ 100MB）
+  static bool _hasMp4MediaBox(List<int> bytes) {
+    if (bytes.length < 16) return false;
+    final List<List<int>> boxTypes = [
+      [0x6D, 0x6F, 0x6F, 0x76], // "moov"
+      [0x6D, 0x64, 0x61, 0x74], // "mdat"
+    ];
+    for (int i = 4; i < bytes.length - 12; i++) {
+      // 检查位置 i 处是否是 moov/mdat
+      bool matched = false;
+      for (final sig in boxTypes) {
+        if (bytes[i] == sig[0] &&
+            bytes[i + 1] == sig[1] &&
+            bytes[i + 2] == sig[2] &&
+            bytes[i + 3] == sig[3]) {
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) continue;
+      // 检查前 4 字节的 size 是否合理
+      final int size = ((bytes[i - 4] & 0xFF) << 24) |
+          ((bytes[i - 3] & 0xFF) << 16) |
+          ((bytes[i - 2] & 0xFF) << 8) |
+          (bytes[i - 1] & 0xFF);
+      // moov/mdat size 通常在 256 字节 ~ 100MB 之间
+      if (size >= 256 && size <= 100 * 1024 * 1024) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// 检查字节流中是否包含 MP4 ftyp box，判断是否为实况图视频数据
   /// 适用三种情况：
   ///   1. 完整 Motion Photo = JPEG + 末尾内嵌 MP4
   ///   2. 纯 MP4 视频（变体返回的 .mp4 文件）
   ///   3. JPEG + MP4 但 EOI 标记在 MP4 内部也出现（取 EOI 之后的位置可能错位）
-  /// 策略：同时从头部（纯 MP4 情况）和 JPEG EOI 之后（Motion Photo 情况）搜索
+  /// 策略：搜索整个文件的 ftyp box，并验证 brand 合理性
+  /// （避免 JPEG 数据内部偶然包含 "ftyp" 字节序列导致误判）
   static bool _hasMp4Trailer(List<int> bytes) {
-    if (bytes.length < 12) return false;
-    // ftyp box 的 ASCII：0x66 0x74 0x79 0x70
-    bool matchAt(int i) =>
-        i >= 0 &&
-        i + 3 < bytes.length &&
-        bytes[i] == 0x66 &&
-        bytes[i + 1] == 0x74 &&
-        bytes[i + 2] == 0x79 &&
-        bytes[i + 3] == 0x70;
-    // 情况 2：纯 MP4，ftyp 通常在文件开头前 64 字节内
-    // 扩展到 4KB 以兼容 ftyp 前有 free/skip box 的 MP4 文件
-    final int headLimit = bytes.length > 4096 ? 4096 : bytes.length;
-    for (int i = 0; i < headLimit - 8; i++) {
-      if (matchAt(i)) return true;
-    }
-    // 情况 1/3：完整 Motion Photo，JPEG EOI 之后是 MP4
-    // 找最后一个 JPEG EOI (0xFF 0xD9)，从其后搜索整个 MP4 段
-    int searchStart = 0;
-    for (int i = bytes.length - 2; i >= 0; i--) {
-      if (bytes[i] == 0xFF && bytes[i + 1] == 0xD9) {
-        searchStart = i + 2;
-        break;
+    if (bytes.length < 16) return false;
+    // 已知 MP4 brand 列表（ftyp box 后 4 字节 major_brand）
+    // 详见 https://mp4ra.org/registered-types/codes
+    final Set<String> knownBrands = {
+      'isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'iso7', 'iso8', 'iso9',
+      'mp41', 'mp42', 'mp71', 'dash', 'avc1', 'heic', 'hevc', 'hevs',
+      'qt  ', 'MSNV', 'CAQV', 'M4V ', 'M4A ', 'M4B ', 'M4P ', 'M4VP',
+      '3gp5', '3gp4', '3gp6', '3g2a', '3g2c', 'MMAT', 'NDSC', 'NDXM',
+      'NDAS', 'NDSM', 'NRI2', 'NRMV', 'NRTA', 'f4v ', 'f4p ', 'f4a ', 'f4b ',
+    };
+    // 已知 MP4 box 类型（ftyp 之后应出现这些之一）
+    final Set<String> knownBoxes = {
+      'moov', 'mdat', 'free', 'skip', 'udta', 'trak', 'mdia', 'minf', 'stbl',
+      'mvhd', 'trak', 'tkhd', 'edts', 'mdia', 'mdhd', 'hdlr', 'minf', 'dinf',
+      'stbl', 'stsd', 'stts', 'stss', 'ctts', 'stsc', 'stsz', 'stco', 'stss',
+    };
+    // 搜索整个文件的 ftyp box
+    // ftyp box 结构：[4字节size]["ftyp"][4字节major_brand][4字节minor_version][compatible_brands...]
+    for (int i = 0; i < bytes.length - 16; i++) {
+      if (bytes[i] == 0x66 && // f
+          bytes[i + 1] == 0x74 && // t
+          bytes[i + 2] == 0x79 && // y
+          bytes[i + 3] == 0x70) { // p
+        // 检查 major_brand
+        if (i + 7 < bytes.length) {
+          final String brand = String.fromCharCodes(bytes.sublist(i + 4, i + 8));
+          if (knownBrands.contains(brand)) {
+            return true;
+          }
+        }
+        // 即使 brand 不在列表中，检查 ftyp box size 是否合理
+        // ftyp box size 至少 16 字节（size+type+brand+version），且不超过文件大小
+        if (i >= 4) {
+          // 用 & 0xFF 确保无符号（List<int> 元素可能为负）
+          final int size = ((bytes[i - 4] & 0xFF) << 24) |
+              ((bytes[i - 3] & 0xFF) << 16) |
+              ((bytes[i - 2] & 0xFF) << 8) |
+              (bytes[i - 1] & 0xFF);
+          // size 合理范围：16 ~ 1MB，且 ftyp box 后应有其他 box
+          if (size >= 16 && size <= 1024 * 1024 && i + size + 8 < bytes.length) {
+            // 检查 ftyp box 后是否紧跟已知 MP4 box
+            final String nextBox =
+                String.fromCharCodes(bytes.sublist(i + size, i + size + 4));
+            if (knownBoxes.contains(nextBox)) {
+              return true;
+            }
+          }
+        }
       }
-    }
-    for (int i = searchStart; i < bytes.length - 8; i++) {
-      if (matchAt(i)) return true;
     }
     return false;
   }
 
-  /// 检查 XMP 元数据中是否包含 Motion Photo 标识
-  /// 即使服务端剥离了 MP4 视频段，XMP 中 "MotionPhoto" 字段通常仍存在
-  /// 据此可判断原图本身是否为实况图（与 hasMp4 区分下载是否完整）
-  /// 注：变体返回纯 MP4 时此函数返回 false（MP4 不含 XMP）
+  /// 检查 XMP 元数据中是否包含实况图标识
+  /// 各厂商 XMP 标识不同：
+  ///   - Google/三星: "MotionPhoto"
+  ///   - 小米 HyperOS: "MicroVideo" (GContainer:ItemLength)
+  ///   - 华为/荣耀: 文件末尾标识，XMP 中可能无标识
+  ///   - OPPO ColorOS: "OpCamera" + MotionPhoto
+  ///   - iOS LivePhoto: "LivePhoto" / "ContentIdentifier"
+  /// 扩展搜索范围到 256KB，覆盖大 EXIF/XMP 段
   static bool _hasMotionPhotoXmp(List<int> bytes) {
-    // XMP 在 JPEG APP1 段中，通常位于文件头部 64KB 内
-    // "MotionPhoto" 的 ASCII：M o t i o n P h o t o
-    final int limit = bytes.length > 65536 ? 65536 : bytes.length;
-    for (int i = 0; i < limit - 11; i++) {
-      if (bytes[i] == 0x4D && // M
-          bytes[i + 1] == 0x6F && // o
-          bytes[i + 2] == 0x74 && // t
-          bytes[i + 3] == 0x69 && // i
-          bytes[i + 4] == 0x6F && // o
-          bytes[i + 5] == 0x6E && // n
-          bytes[i + 6] == 0x50 && // P
-          bytes[i + 7] == 0x68 && // h
-          bytes[i + 8] == 0x6F && // o
-          bytes[i + 9] == 0x74 && // t
-          bytes[i + 10] == 0x6F) { // o
-        return true;
+    final int limit = bytes.length > 262144 ? 262144 : bytes.length;
+    // 多种实况图标识的 ASCII 字节序列
+    final List<List<int>> signatures = [
+      // "MotionPhoto" (Google/三星/OPPO)
+      [0x4D, 0x6F, 0x74, 0x69, 0x6F, 0x6E, 0x50, 0x68, 0x6F, 0x74, 0x6F],
+      // "MicroVideo" (小米)
+      [0x4D, 0x69, 0x63, 0x72, 0x6F, 0x56, 0x69, 0x64, 0x65, 0x6F],
+      // "GCamera" (Google Camera)
+      [0x47, 0x43, 0x61, 0x6D, 0x65, 0x72, 0x61],
+      // "LivePhoto" (iOS 风格)
+      [0x4C, 0x69, 0x76, 0x65, 0x50, 0x68, 0x6F, 0x74, 0x6F],
+      // "GContainer" (Google Motion Photo XMP 容器标识)
+      [0x47, 0x43, 0x6F, 0x6E, 0x74, 0x61, 0x69, 0x6E, 0x65, 0x72],
+    ];
+    for (int i = 0; i < limit - 15; i++) {
+      for (final sig in signatures) {
+        bool match = true;
+        for (int j = 0; j < sig.length; j++) {
+          if (bytes[i + j] != sig[j]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) return true;
       }
     }
     return false;
