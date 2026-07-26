@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../logic/network/request.dart';
 import '../utils/storage_util.dart';
 import '../utils/utils.dart';
 
@@ -88,17 +89,29 @@ class DownloadUtils {
       }
 
       SmartDialog.showLoading(msg: '保存中');
-      Dio dio = Dio();
-      // 带上官方酷安 UA + Referer，避免服务端对非官方客户端返回剥离了
-      // 视频数据的静态 JPEG（实况图 Motion Photo = JPEG + 末尾内嵌 MP4）。
-      // Referer 模拟从酷安 web 页面发起的请求，部分 CDN 会校验。
-      dio.options.headers['User-Agent'] = GStorage.userAgent;
-      dio.options.headers['Referer'] = 'https://www.coolapk.com/';
-      dio.options.headers['Accept'] =
-          'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8';
+      // 使用项目全局 Dio 实例（Request.dio），其携带 ApiInterceptor，
+      // 会自动注入官方酷安客户端全套请求头：
+      //   User-Agent / X-Requested-With / X-App-Id / X-App-Token /
+      //   X-App-Device / X-Api-Version / X-App-Version / X-App-Code /
+      //   X-Sdk-Int / X-Sdk-Locale / X-App-Channel / X-App-Mode / Cookie
+      // 实测：用裸 Dio() 只带 UA+Referer 下载实况图，服务端返回剥离了
+      // MP4 视频段的静态 JPEG（23KB，XMP 标识仍为 MotionPhoto）。
+      // 官方 CDN 可能校验 X-Requested-With 等头决定是否返回完整 Motion Photo。
+      // 用全局 Dio 实例下载，并在单次请求中放宽超时（实况图体积较大）
+      final Dio dio = Request.dio;
       for (int index = 0; index < urlList.length; index++) {
         final Response response = await dio.get(urlList[index],
-            options: Options(responseType: ResponseType.bytes));
+            options: Options(
+              responseType: ResponseType.bytes,
+              // 实况图含视频，体积可能数 MB，放宽超时
+              sendTimeout: const Duration(seconds: 30),
+              receiveTimeout: const Duration(seconds: 30),
+              headers: {
+                'Referer': 'https://www.coolapk.com/',
+                'Accept':
+                    'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+              },
+            ));
         final List<int> bytes = response.data as List<int>;
         // 诊断：文件末尾是否包含 MP4 ftyp box（Motion Photo 标识）
         // 若包含则下载的是完整实况图，否则服务端返回的是剥离了视频的静态图
