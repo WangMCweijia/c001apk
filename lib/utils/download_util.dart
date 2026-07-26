@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:file_picker/file_picker.dart';
@@ -133,18 +134,25 @@ class DownloadUtils {
             try {
               final Response r = await fetch(tryUrl);
               final List<int> b = r.data as List<int>;
+              final bool bHasMp4 = _hasMp4Trailer(b);
+              final bool bHasXmp = _hasMotionPhotoXmp(b);
+              debugPrint(
+                  '[download] variant=$tryUrl size=${b.length} hasMp4=$bHasMp4 hasXmp=$bHasXmp');
               // 找到含 MP4 视频段的变体立即采用
-              if (_hasMp4Trailer(b)) {
+              if (bHasMp4) {
                 bytes = b;
                 response = r;
                 hasMp4 = true;
+                hasMotionXmp = bHasXmp;
                 usedUrl = tryUrl;
                 break;
               }
               // 否则取体积最大的变体（可能仍是静态图，但更大说明更接近原图）
-              if (b.length > bytes.length) {
+              // 体积明显大于原 URL（如 >100KB）的变体值得采用
+              if (b.length > bytes.length && b.length > 100 * 1024) {
                 bytes = b;
                 response = r;
+                hasMotionXmp = bHasXmp;
                 usedUrl = tryUrl;
               }
             } catch (e) {
@@ -152,20 +160,43 @@ class DownloadUtils {
               debugPrint('[download] variant $tryUrl failed: $e');
             }
           }
-          // 重新计算 XMP（变体可能不含）
-          hasMotionXmp = _hasMotionPhotoXmp(bytes);
         }
+        // 最终基于采用的 bytes 重新计算所有标识，确保 Toast 准确
+        hasMp4 = _hasMp4Trailer(bytes);
+        hasMotionXmp = _hasMotionPhotoXmp(bytes);
         final int? contentLength = int.tryParse(
             response.headers.value('content-length') ?? '');
         debugPrint(
             '[download] url=$usedUrl originalUrl=$originalUrl size=${bytes.length} contentLength=$contentLength hasMp4=$hasMp4 hasMotionXmp=$hasMotionXmp');
         final String picName = originalUrl.split('/').last;
+        // 判断变体返回的是否为纯 MP4 视频文件（用于提示与保存路径）
+        // MP4 文件起始处有 ftyp box（前 64 字节内）
+        // 但有些 MP4 在 ftyp 前可能有其他 box（如 free/skip），扩展搜索到 4KB
+        final bool isPureMp4 = bytes.length >= 16 && () {
+              // JPEG 起始标识 0xFF 0xD8，若是 JPEG 则不是纯 MP4
+              if (bytes[0] == 0xFF && bytes[1] == 0xD8) return false;
+              final int limit =
+                  bytes.length > 4096 ? 4096 : bytes.length;
+              for (int i = 0; i < limit - 8; i++) {
+                if (bytes[i] == 0x66 &&
+                    bytes[i + 1] == 0x74 &&
+                    bytes[i + 2] == 0x79 &&
+                    bytes[i + 3] == 0x70) {
+                  return true;
+                }
+              }
+              return false;
+            }();
 
         if (Utils.isDesktop) {
+          // 纯 MP4 时让文件扩展名匹配类型
+          final String saveName = isPureMp4 && picName.endsWith('.jpg')
+              ? '${picName.substring(0, picName.length - 4)}.mp4'
+              : picName;
           String? filePath = await FilePicker.platform.saveFile(
-            dialogTitle: 'Save Image',
-            fileName: picName,
-            type: FileType.image,
+            dialogTitle: 'Save',
+            fileName: saveName,
+            type: isPureMp4 ? FileType.video : FileType.image,
           );
 
           if (filePath == null) {
@@ -175,16 +206,41 @@ class DownloadUtils {
 
           File(filePath).writeAsBytesSync(response.data);
         } else {
-          final SaveResult result = await SaverGallery.saveImage(
-            Uint8List.fromList(response.data),
-            fileName: picName,
-            androidRelativePath: "Pictures/c001apk-flutter",
-            skipIfExists: true,
-          );
+          // 移动端：纯 MP4 走视频保存（saveFile 需要文件路径），JPEG 走图片保存
+          if (isPureMp4) {
+            // SaverGallery.saveFile 需要 filePath，先把 bytes 写入临时文件
+            final String mp4Name = picName.endsWith('.jpg')
+                ? '${picName.substring(0, picName.length - 4)}.mp4'
+                : picName;
+            final Directory tmpDir = await getTemporaryDirectory();
+            final String tmpPath = '${tmpDir.path}/$mp4Name';
+            await File(tmpPath).writeAsBytes(bytes);
+            final SaveResult result = await SaverGallery.saveFile(
+              filePath: tmpPath,
+              fileName: mp4Name,
+              androidRelativePath: "Movies/c001apk-flutter",
+              skipIfExists: true,
+            );
+            // 保存完成后清理临时文件
+            try {
+              await File(tmpPath).delete();
+            } catch (_) {}
+            if (result.errorMessage != null) {
+              SmartDialog.dismiss();
+              SmartDialog.showToast('${index + 1}: ${result.errorMessage}');
+            }
+          } else {
+            final SaveResult result = await SaverGallery.saveImage(
+              Uint8List.fromList(response.data),
+              fileName: picName,
+              androidRelativePath: "Pictures/c001apk-flutter",
+              skipIfExists: true,
+            );
 
-          if (result.errorMessage != null) {
-            SmartDialog.dismiss();
-            SmartDialog.showToast('${index + 1}: ${result.errorMessage}');
+            if (result.errorMessage != null) {
+              SmartDialog.dismiss();
+              SmartDialog.showToast('${index + 1}: ${result.errorMessage}');
+            }
           }
         }
 
@@ -192,12 +248,14 @@ class DownloadUtils {
           SmartDialog.dismiss();
           final String sizeStr = _formatBytes(bytes.length);
           final String label;
-          if (hasMp4) {
+          if (isPureMp4) {
+            // 变体返回纯 MP4 视频文件（变体 .mp4 命中，URL 单独指向视频）
+            label = '已保存（实况图视频 $sizeStr）';
+          } else if (hasMp4) {
             // 完整 Motion Photo：JPEG + MP4 视频
             label = '已保存（实况图 $sizeStr）';
           } else if (hasMotionXmp) {
             // XMP 标识为实况图，但 MP4 视频段缺失
-            // 若 usedUrl 与原 URL 不同，说明有变体返回了更大的数据
             if (usedUrl != originalUrl) {
               label = '已保存（实况图静态帧 $sizeStr，已尝试变体仍无视频）';
             } else {
@@ -215,12 +273,30 @@ class DownloadUtils {
     }
   }
 
-  /// 检查字节流中是否包含 MP4 ftyp box，判断是否为 Motion Photo 实况图
-  /// Motion Photo = JPEG + 末尾内嵌 MP4，MP4 起始处有 "ftyp" box
+  /// 检查字节流中是否包含 MP4 ftyp box，判断是否为实况图视频数据
+  /// 适用三种情况：
+  ///   1. 完整 Motion Photo = JPEG + 末尾内嵌 MP4
+  ///   2. 纯 MP4 视频（变体返回的 .mp4 文件）
+  ///   3. JPEG + MP4 但 EOI 标记在 MP4 内部也出现（取 EOI 之后的位置可能错位）
+  /// 策略：同时从头部（纯 MP4 情况）和 JPEG EOI 之后（Motion Photo 情况）搜索
   static bool _hasMp4Trailer(List<int> bytes) {
     if (bytes.length < 12) return false;
-    // 定位 JPEG EOI (0xFF 0xD9) 之后的位置：JPEG 数据结束后即为内嵌 MP4
-    // JPEG 中可能含多个 0xFF 0xD9（EXIF 缩略图），取最后一个作为真实 EOI
+    // ftyp box 的 ASCII：0x66 0x74 0x79 0x70
+    bool matchAt(int i) =>
+        i >= 0 &&
+        i + 3 < bytes.length &&
+        bytes[i] == 0x66 &&
+        bytes[i + 1] == 0x74 &&
+        bytes[i + 2] == 0x79 &&
+        bytes[i + 3] == 0x70;
+    // 情况 2：纯 MP4，ftyp 通常在文件开头前 64 字节内
+    // 扩展到 4KB 以兼容 ftyp 前有 free/skip box 的 MP4 文件
+    final int headLimit = bytes.length > 4096 ? 4096 : bytes.length;
+    for (int i = 0; i < headLimit - 8; i++) {
+      if (matchAt(i)) return true;
+    }
+    // 情况 1/3：完整 Motion Photo，JPEG EOI 之后是 MP4
+    // 找最后一个 JPEG EOI (0xFF 0xD9)，从其后搜索整个 MP4 段
     int searchStart = 0;
     for (int i = bytes.length - 2; i >= 0; i--) {
       if (bytes[i] == 0xFF && bytes[i + 1] == 0xD9) {
@@ -228,16 +304,8 @@ class DownloadUtils {
         break;
       }
     }
-    // 在 JPEG 数据结束后搜索 MP4 ftyp box（Motion Photo 视频段起始）
-    // ftyp box 的 ASCII：0x66 0x74 0x79 0x70
-    // 修复：原只在末尾 1MB 搜索，JPEG 较大时 ftyp 不在末尾 1MB 内导致漏判
     for (int i = searchStart; i < bytes.length - 8; i++) {
-      if (bytes[i] == 0x66 &&
-          bytes[i + 1] == 0x74 &&
-          bytes[i + 2] == 0x79 &&
-          bytes[i + 3] == 0x70) {
-        return true;
-      }
+      if (matchAt(i)) return true;
     }
     return false;
   }
@@ -245,6 +313,7 @@ class DownloadUtils {
   /// 检查 XMP 元数据中是否包含 Motion Photo 标识
   /// 即使服务端剥离了 MP4 视频段，XMP 中 "MotionPhoto" 字段通常仍存在
   /// 据此可判断原图本身是否为实况图（与 hasMp4 区分下载是否完整）
+  /// 注：变体返回纯 MP4 时此函数返回 false（MP4 不含 XMP）
   static bool _hasMotionPhotoXmp(List<int> bytes) {
     // XMP 在 JPEG APP1 段中，通常位于文件头部 64KB 内
     // "MotionPhoto" 的 ASCII：M o t i o n P h o t o
