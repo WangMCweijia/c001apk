@@ -90,36 +90,76 @@ class DownloadUtils {
 
       SmartDialog.showLoading(msg: '保存中');
       // 使用项目全局 Dio 实例（Request.dio），其携带 ApiInterceptor，
-      // 会自动注入官方酷安客户端全套请求头：
-      //   User-Agent / X-Requested-With / X-App-Id / X-App-Token /
-      //   X-App-Device / X-Api-Version / X-App-Version / X-App-Code /
-      //   X-Sdk-Int / X-Sdk-Locale / X-App-Channel / X-App-Mode / Cookie
-      // 实测：用裸 Dio() 只带 UA+Referer 下载实况图，服务端返回剥离了
-      // MP4 视频段的静态 JPEG（23KB，XMP 标识仍为 MotionPhoto）。
-      // 官方 CDN 可能校验 X-Requested-With 等头决定是否返回完整 Motion Photo。
-      // 用全局 Dio 实例下载，并在单次请求中放宽超时（实况图体积较大）
+      // 会自动注入官方酷安客户端全套请求头。
+      // 实测：请求头并非关键，XMP 标识为 MotionPhoto 但 MP4 视频段被剥离。
+      // 尝试方案：先用原 URL 下载，若 XMP 显示为实况图但 MP4 段缺失，
+      // 则依次尝试常见实况图 URL 变体，寻找能返回完整数据的源
       final Dio dio = Request.dio;
+      Future<Response> fetch(String url) => dio.get(url,
+          options: Options(
+            responseType: ResponseType.bytes,
+            sendTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(seconds: 30),
+            headers: {
+              'Referer': 'https://www.coolapk.com/',
+              // 明确接受视频类型，可能影响服务端决策
+              'Accept':
+                  'image/avif,image/webp,image/apng,image/svg+xml,image/*,video/mp4,video/*,*/*;q=0.8',
+            },
+          ));
       for (int index = 0; index < urlList.length; index++) {
-        final Response response = await dio.get(urlList[index],
-            options: Options(
-              responseType: ResponseType.bytes,
-              // 实况图含视频，体积可能数 MB，放宽超时
-              sendTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(seconds: 30),
-              headers: {
-                'Referer': 'https://www.coolapk.com/',
-                'Accept':
-                    'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-              },
-            ));
-        final List<int> bytes = response.data as List<int>;
-        // 诊断：文件末尾是否包含 MP4 ftyp box（Motion Photo 标识）
-        // 若包含则下载的是完整实况图，否则服务端返回的是剥离了视频的静态图
-        final bool hasMp4 = _hasMp4Trailer(bytes);
-        final bool hasMotionXmp = _hasMotionPhotoXmp(bytes);
+        final String originalUrl = urlList[index];
+        // 第一步：用原 URL 下载
+        Response response = await fetch(originalUrl);
+        List<int> bytes = response.data as List<int>;
+        bool hasMp4 = _hasMp4Trailer(bytes);
+        bool hasMotionXmp = _hasMotionPhotoXmp(bytes);
+        String usedUrl = originalUrl;
+        // 第二步：若 XMP 标识为实况图但 MP4 段缺失，尝试 URL 变体
+        if (!hasMp4 && hasMotionXmp && originalUrl.endsWith('.jpg')) {
+          final List<String> variants = [
+            // 1. .motion.jpg 后缀（实况图专用）
+            '${originalUrl.substring(0, originalUrl.length - 4)}.motion.jpg',
+            // 2. 直接 .mp4 后缀（视频段独立存储）
+            '${originalUrl.substring(0, originalUrl.length - 4)}.mp4',
+            // 3. 路径中插入 /motion/
+            if (originalUrl.contains('/feed/'))
+              originalUrl.replaceFirst('/feed/', '/feed/motion/'),
+            // 4. 添加查询参数 ?type=original
+            if (!originalUrl.contains('?'))
+              '$originalUrl?type=original',
+          ];
+          for (final String tryUrl in variants) {
+            try {
+              final Response r = await fetch(tryUrl);
+              final List<int> b = r.data as List<int>;
+              // 找到含 MP4 视频段的变体立即采用
+              if (_hasMp4Trailer(b)) {
+                bytes = b;
+                response = r;
+                hasMp4 = true;
+                usedUrl = tryUrl;
+                break;
+              }
+              // 否则取体积最大的变体（可能仍是静态图，但更大说明更接近原图）
+              if (b.length > bytes.length) {
+                bytes = b;
+                response = r;
+                usedUrl = tryUrl;
+              }
+            } catch (e) {
+              // 候选 URL 失败（404 等），继续尝试下一个
+              debugPrint('[download] variant $tryUrl failed: $e');
+            }
+          }
+          // 重新计算 XMP（变体可能不含）
+          hasMotionXmp = _hasMotionPhotoXmp(bytes);
+        }
+        final int? contentLength = int.tryParse(
+            response.headers.value('content-length') ?? '');
         debugPrint(
-            '[download] url=${urlList[index]} size=${bytes.length} hasMp4=$hasMp4 hasMotionXmp=$hasMotionXmp');
-        final String picName = urlList[index].split('/').last;
+            '[download] url=$usedUrl originalUrl=$originalUrl size=${bytes.length} contentLength=$contentLength hasMp4=$hasMp4 hasMotionXmp=$hasMotionXmp');
+        final String picName = originalUrl.split('/').last;
 
         if (Utils.isDesktop) {
           String? filePath = await FilePicker.platform.saveFile(
@@ -156,8 +196,13 @@ class DownloadUtils {
             // 完整 Motion Photo：JPEG + MP4 视频
             label = '已保存（实况图 $sizeStr）';
           } else if (hasMotionXmp) {
-            // XMP 标识为实况图，但 MP4 视频段缺失：服务端剥离了视频数据
-            label = '已保存（实况图静态帧 $sizeStr，视频未下载）';
+            // XMP 标识为实况图，但 MP4 视频段缺失
+            // 若 usedUrl 与原 URL 不同，说明有变体返回了更大的数据
+            if (usedUrl != originalUrl) {
+              label = '已保存（实况图静态帧 $sizeStr，已尝试变体仍无视频）';
+            } else {
+              label = '已保存（实况图静态帧 $sizeStr，视频未下载）';
+            }
           } else {
             label = '已保存（$sizeStr）';
           }

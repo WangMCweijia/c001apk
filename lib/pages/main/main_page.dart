@@ -278,83 +278,92 @@ class _MainPageState extends State<MainPage> {
     required bool canRefresh,
   }) {
     final activeColor = isDark ? AppTheme.darkPrimary : AppTheme.lightPrimary;
-    return InkWell(
+    // 用 Material + InkWell 让水波纹/高亮能正常显示：
+    // 原结构 Container> InkWell，Container 的背景色（capsuleDecoration）
+    // 会遮挡 InkWell 的水波纹，导致点击无视觉反馈。
+    // 这里 Material 设为透明背景，水波纹用主题色淡色，确保可见。
+    return Material(
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(24),
-      onTap: isExpanded
-          ? _onPublish
-          : (canRefresh ? _onRefresh : null),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AnimatedOpacity(
-                    opacity: isExpanded ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOutCubic,
-                    child: Icon(
-                      Icons.add_circle_rounded,
-                      size: 22,
-                      color: activeColor,
-                    ),
-                  ),
-                  AnimatedOpacity(
-                    opacity: isExpanded ? 0.0 : 1.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOutCubic,
-                    child: Icon(
-                      Icons.refresh_rounded,
-                      size: 22,
-                      color: activeColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 2),
-            SizedBox(
-              height: 12,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AnimatedOpacity(
-                    opacity: isExpanded ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOutCubic,
-                    child: Text(
-                      '发布',
-                      style: TextStyle(
-                        fontSize: 10,
-                        height: 1,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: isExpanded
+            ? _onPublish
+            : (canRefresh ? _onRefresh : null),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AnimatedOpacity(
+                      opacity: isExpanded ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      child: Icon(
+                        Icons.add_circle_rounded,
+                        size: 22,
                         color: activeColor,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  AnimatedOpacity(
-                    opacity: isExpanded ? 0.0 : 1.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOutCubic,
-                    child: Text(
-                      '刷新',
-                      style: TextStyle(
-                        fontSize: 10,
-                        height: 1,
+                    AnimatedOpacity(
+                      opacity: isExpanded ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      child: Icon(
+                        Icons.refresh_rounded,
+                        size: 22,
                         color: activeColor,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              SizedBox(
+                height: 12,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AnimatedOpacity(
+                      opacity: isExpanded ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      child: Text(
+                        '发布',
+                        style: TextStyle(
+                          fontSize: 10,
+                          height: 1,
+                          color: activeColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    AnimatedOpacity(
+                      opacity: isExpanded ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      child: Text(
+                        '刷新',
+                        style: TextStyle(
+                          fontSize: 10,
+                          height: 1,
+                          color: activeColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -372,30 +381,37 @@ class _MainPageState extends State<MainPage> {
     final inactiveColor = isDark
         ? AppTheme.darkOutline
         : AppTheme.lightOnSurface.withValues(alpha: 0.55);
-    return InkWell(
+    // 与 _capsuleActionButton 一致：用 Material + InkWell 让水波纹可见，
+    // 避免父级 Container 背景色遮挡视觉反馈
+    return Material(
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(24),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 22,
-              color: selected ? activeColor : inactiveColor,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                height: 1,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 22,
                 color: selected ? activeColor : inactiveColor,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1,
+                  color: selected ? activeColor : inactiveColor,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
