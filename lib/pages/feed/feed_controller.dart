@@ -162,27 +162,32 @@ class FeedController extends CommonController {
   }
 
   Future<void> getFeedData() async {
-    debugPrint('[feedDetail] getFeedData start id=$id url=/v6/feed/detail?id=$id');
-    LoadingState<dynamic> response =
-        await NetworkRepo.getDataFromUrl(url: '/v6/feed/detail?id=$id');
-    debugPrint('[feedDetail] getFeedData response id=$id '
-        'type=${response.runtimeType} '
-        'isSuccess=${response is Success} '
-        'isError=${response is Error} '
-        'isEmpty=${response is Empty}');
-    if (response is Success) {
-      Datum data = (response.response as Datum);
-      _processFeedData(data);
-      onGetData();
+    debugPrint('[feedDetail] getFeedData start id=$id hashCode=${hashCode} url=/v6/feed/detail?id=$id');
+    try {
+      LoadingState<dynamic> response =
+          await NetworkRepo.getDataFromUrl(url: '/v6/feed/detail?id=$id');
+      debugPrint('[feedDetail] getFeedData response id=$id hashCode=${hashCode} '
+          'type=${response.runtimeType} '
+          'isSuccess=${response is Success} '
+          'isError=${response is Error} '
+          'isEmpty=${response is Empty}');
+      if (response is Success) {
+        Datum data = (response.response as Datum);
+        _processFeedData(data);
+        onGetData();
 
-      isFav = GStorage.checkFav(id);
-      isBlocked = GStorage.checkUser(feedUid.toString());
-      // todo: check
-      if (recordHistory && !GStorage.checkHistory(id)) {
-        GStorage.historyFeed.put(id, getFeed(data));
+        isFav = GStorage.checkFav(id);
+        isBlocked = GStorage.checkUser(feedUid.toString());
+        // todo: check
+        if (recordHistory && !GStorage.checkHistory(id)) {
+          GStorage.historyFeed.put(id, getFeed(data));
+        }
       }
+      feedState.value = response;
+    } catch (e, stack) {
+      debugPrint('[feedDetail] getFeedData EXCEPTION id=$id hashCode=${hashCode} error=$e\n$stack');
+      feedState.value = LoadingState.error(e.toString());
     }
-    feedState.value = response;
   }
 
   void onFav() {
@@ -208,7 +213,7 @@ class FeedController extends CommonController {
   @override
   void onInit() {
     super.onInit();
-    debugPrint('[feedDetail] onInit id=$id '
+    debugPrint('[feedDetail] onInit id=$id hashCode=${hashCode} '
         'preloadedData=${preloadedData == null ? "null(不预加载)" : "有(预加载)"} '
         'preloadedMessage=${preloadedData?.message == null ? "null" : (preloadedData!.message!.isEmpty ? "空字符串" : "有值")} '
         'preloadedPicArr=${preloadedData?.picArr == null ? "null" : (preloadedData!.picArr!.isEmpty ? "空数组" : "有${preloadedData!.picArr!.length}张图")} '
