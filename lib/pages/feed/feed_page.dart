@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -50,7 +49,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    debugPrint('[feedDetail] FeedPage.initState id=$_id isLogin=${GlobalData().isLogin}');
     if (GlobalData().isLogin) {
       _fabAnimationCtr = AnimationController(
           vsync: this, duration: const Duration(milliseconds: 300));
@@ -112,9 +110,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   ];
 
   Widget _buildFeedContent(LoadingState feedState) {
-    debugPrint('[feedDetail] _buildFeedContent feedState=${feedState.runtimeType} '
-        'articleList=${_feedController.articleList == null ? "null" : (_feedController.articleList!.isEmpty ? "空数组" : "${_feedController.articleList!.length}项")} '
-        'controllerId=${_feedController.id} hashCode=${_feedController.hashCode}');
     switch (feedState) {
       case Empty():
         return GestureDetector(
@@ -461,7 +456,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[feedDetail] FeedPage.build start id=$_id controllerTag=${_feedController.id}');
     return Scaffold(
       floatingActionButton: Obx(
         () => _feedController.feedState.value is Success && GlobalData().isLogin

@@ -1,5 +1,4 @@
 import 'package:c001apk_flutter/components/network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -47,12 +46,6 @@ class FeedCard extends StatelessWidget {
     //   等待 getFeedData() 返回完整数据后重新合成并渲染。
     final bool shouldPreload = !isHistory &&
         (!data.message.isNullOrEmpty || !data.picArr.isNullOrEmpty);
-    debugPrint('[feedDetail] _onViewFeed id=${data.id} '
-        'isHistory=$isHistory '
-        'shouldPreload=$shouldPreload '
-        'message=${data.message == null ? "null" : (data.message!.isEmpty ? "空字符串" : "有值")} '
-        'picArr=${data.picArr == null ? "null" : (data.picArr!.isEmpty ? "空数组" : "有${data.picArr!.length}张图")} '
-        'messageRawOutput=${data.messageRawOutput == null ? "null" : (data.messageRawOutput == "null" ? '"null"字符串' : "有值")}');
     Get.toNamed('/feed/${data.id}',
         arguments: shouldPreload ? {'datum': data} : null);
   }

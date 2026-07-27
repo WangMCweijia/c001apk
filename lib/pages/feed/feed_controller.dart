@@ -31,9 +31,9 @@ class FeedController extends CommonController {
   int fromFeedAuthor = 0;
 
   String? feedTypeName;
-  int? feedUid;
+  dynamic feedUid;
   String? feedUsername;
-  int? replyNum;
+  dynamic replyNum;
 
   List<FeedArticle>? articleList;
   List<String>? articleImgList;
@@ -68,14 +68,8 @@ class FeedController extends CommonController {
 
   /// 处理动态数据：解析 messageRawOutput、补充 picArr、提取字段
   void _processFeedData(Datum data) {
-    debugPrint('[feedDetail] _processFeedData id=${data.id} hashCode=${hashCode} '
-        'messageRawOutput=${data.messageRawOutput == null ? "null" : (data.messageRawOutput == "null" ? '"null"' : "有值(${data.messageRawOutput!.length}字符)")} '
-        'message=${data.message == null ? "null" : (data.message!.isEmpty ? "空字符串" : "有值(${data.message!.length}字符)")} '
-        'picArr=${data.picArr == null ? "null" : (data.picArr!.isEmpty ? "空数组" : "有${data.picArr!.length}张图")} '
-        'articleListBefore=${articleList == null ? "null" : (articleList!.isEmpty ? "空数组" : "${articleList!.length}项")}');
     try {
       if (data.messageRawOutput != null && data.messageRawOutput != 'null') {
-        debugPrint('[feedDetail] _processFeedData branch=if(messageRawOutput) id=${data.id}');
         List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
         articleList = jsonList
             .map((json) => FeedArticle.fromJson(json))
@@ -121,7 +115,6 @@ class FeedController extends CommonController {
           }
         }
       } else {
-        debugPrint('[feedDetail] _processFeedData branch=else(message+picArr) id=${data.id}');
         articleList = [];
         articleImgList = [];
         if (!data.message.isNullOrEmpty) {
@@ -134,9 +127,6 @@ class FeedController extends CommonController {
           }
         }
       }
-      debugPrint('[feedDetail] _processFeedData before topReply id=${data.id} '
-          'topReplyRows=${data.topReplyRows == null ? "null" : (data.topReplyRows!.isEmpty ? "空数组" : "有${data.topReplyRows!.length}项")} '
-          'replyRows=${data.replyRows == null ? "null" : (data.replyRows!.isEmpty ? "空数组" : "有${data.replyRows!.length}项")}');
       if (!data.topReplyRows.isNullOrEmpty) {
         topReply = data.topReplyRows![0];
       } else if (topReply == null && !data.replyRows.isNullOrEmpty) {
@@ -149,26 +139,17 @@ class FeedController extends CommonController {
       feedUid = data.uid;
       feedTypeName = data.feedTypeName;
       replyNum = data.replynum;
-      debugPrint('[feedDetail] _processFeedData done id=${data.id} hashCode=${hashCode} '
-          'articleListAfter=${articleList == null ? "null" : (articleList!.isEmpty ? "空数组" : "${articleList!.length}项")}');
     } catch (e, stack) {
-      debugPrint('[feedDetail] _processFeedData EXCEPTION id=${data.id} hashCode=${hashCode} error=$e\n$stack');
-      // 异常时清空 articleList,让 onInit 的 canShowPreloaded=false 走网络加载
+      debugPrint('[feedDetail] _processFeedData EXCEPTION id=${data.id} error=$e\n$stack');
       articleList = null;
       articleImgList = null;
     }
   }
 
   Future<void> getFeedData() async {
-    debugPrint('[feedDetail] getFeedData start id=$id hashCode=${hashCode} url=/v6/feed/detail?id=$id');
     try {
       LoadingState<dynamic> response =
           await NetworkRepo.getDataFromUrl(url: '/v6/feed/detail?id=$id');
-      debugPrint('[feedDetail] getFeedData response id=$id hashCode=${hashCode} '
-          'type=${response.runtimeType} '
-          'isSuccess=${response is Success} '
-          'isError=${response is Error} '
-          'isEmpty=${response is Empty}');
       if (response is Success) {
         Datum data = (response.response as Datum);
         _processFeedData(data);
@@ -183,7 +164,7 @@ class FeedController extends CommonController {
       }
       feedState.value = response;
     } catch (e, stack) {
-      debugPrint('[feedDetail] getFeedData EXCEPTION id=$id hashCode=${hashCode} error=$e\n$stack');
+      debugPrint('[feedDetail] getFeedData EXCEPTION id=$id error=$e\n$stack');
       feedState.value = LoadingState.error(e.toString());
     }
   }
@@ -211,22 +192,13 @@ class FeedController extends CommonController {
   @override
   void onInit() {
     super.onInit();
-    debugPrint('[feedDetail] onInit id=$id hashCode=${hashCode} '
-        'preloadedData=${preloadedData == null ? "null(不预加载)" : "有(预加载)"} '
-        'preloadedMessage=${preloadedData?.message == null ? "null" : (preloadedData!.message!.isEmpty ? "空字符串" : "有值")} '
-        'preloadedPicArr=${preloadedData?.picArr == null ? "null" : (preloadedData!.picArr!.isEmpty ? "空数组" : "有${preloadedData!.picArr!.length}张图")} '
-        'preloadedMessageRawOutput=${preloadedData?.messageRawOutput == null ? "null" : (preloadedData!.messageRawOutput == "null" ? '"null"字符串' : "有值")}');
     if (preloadedData != null) {
       _processFeedData(preloadedData!);
       // 只有预加载合成的 articleList 非空时才设置 Success,
-      // 避免精简 Datum(message/picArr 都空)合成空 articleList 后
-      // 渲染空白 FeedCard 导致白屏。
-      // articleList 为空时保持 Loading,等 getFeedData() 返回完整数据
-      // 后重新合成并渲染。
+      // 避免精简 Datum 合成空 articleList 后渲染空白 FeedCard 导致白屏。
+      // articleList 为空时保持 Loading,等 getFeedData() 返回完整数据后渲染。
       final bool canShowPreloaded =
           articleList != null && articleList!.isNotEmpty;
-      debugPrint('[feedDetail] onInit canShowPreloaded=$canShowPreloaded '
-          'articleListSize=${articleList?.length ?? 0}');
       if (canShowPreloaded) {
         feedState.value = LoadingState.success(preloadedData!);
       }
