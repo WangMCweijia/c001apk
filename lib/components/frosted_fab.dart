@@ -17,7 +17,7 @@ class FrostedFAB extends StatelessWidget {
     required this.child,
     this.tooltip,
     this.size = 56.0,
-    this.bgAlpha = 0.55,
+    this.bgAlpha = 0.40,
   });
 
   final VoidCallback? onPressed;
@@ -25,7 +25,7 @@ class FrostedFAB extends StatelessWidget {
   final String? tooltip;
   final double size;
   /// 背景色透明度（0.0~1.0）。日间为白底 alpha，夜间为 darkCardBg alpha。
-  /// 默认 0.55（55%）。值越低越透明，毛玻璃感越强。
+  /// 默认 0.40（40%）。值越低越透明，毛玻璃感越强。
   final double bgAlpha;
 
   @override
