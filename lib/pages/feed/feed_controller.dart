@@ -68,97 +68,95 @@ class FeedController extends CommonController {
 
   /// 处理动态数据：解析 messageRawOutput、补充 picArr、提取字段
   void _processFeedData(Datum data) {
-    debugPrint('[feedDetail] _processFeedData id=${data.id} '
+    debugPrint('[feedDetail] _processFeedData id=${data.id} hashCode=${hashCode} '
         'messageRawOutput=${data.messageRawOutput == null ? "null" : (data.messageRawOutput == "null" ? '"null"' : "有值(${data.messageRawOutput!.length}字符)")} '
         'message=${data.message == null ? "null" : (data.message!.isEmpty ? "空字符串" : "有值(${data.message!.length}字符)")} '
         'picArr=${data.picArr == null ? "null" : (data.picArr!.isEmpty ? "空数组" : "有${data.picArr!.length}张图")} '
         'articleListBefore=${articleList == null ? "null" : (articleList!.isEmpty ? "空数组" : "${articleList!.length}项")}');
-    if (data.messageRawOutput != null && data.messageRawOutput != 'null') {
-      List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
-      articleList = jsonList
-          .map((json) => FeedArticle.fromJson(json))
-          .where((item) => ['text', 'image', 'shareUrl'].contains(item.type))
-          .toList();
-      if (!data.title.isNullOrEmpty) {
-        // data.title 在酷安中可能是"用户名的动态"格式，
-        // 顶栏 header 已显示发布者名字，去掉用户名前缀只保留动态标题
-        String title = data.title!;
-        final uname = data.userInfo?.username ?? data.username;
-        if (uname != null && uname.isNotEmpty) {
-          // 去掉 "用户名的动态" / "用户名: 动态" 等前缀
-          if (title == '$uname的动态' || title == '$uname: 动态') {
-            title = ''; // 纯前缀则不显示标题
-          } else if (title.startsWith('$uname的动态')) {
-            title = title.substring('$uname的动态'.length).trim();
-          } else if (title.startsWith('$uname: ')) {
-            title = title.substring('$uname: '.length).trim();
-          } else if (title.startsWith('$uname：')) {
-            title = title.substring('$uname：'.length).trim();
+    try {
+      if (data.messageRawOutput != null && data.messageRawOutput != 'null') {
+        debugPrint('[feedDetail] _processFeedData branch=if(messageRawOutput) id=${data.id}');
+        List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
+        articleList = jsonList
+            .map((json) => FeedArticle.fromJson(json))
+            .where((item) => ['text', 'image', 'shareUrl'].contains(item.type))
+            .toList();
+        if (!data.title.isNullOrEmpty) {
+          String title = data.title!;
+          final uname = data.userInfo?.username ?? data.username;
+          if (uname != null && uname.isNotEmpty) {
+            if (title == '$uname的动态' || title == '$uname: 动态') {
+              title = '';
+            } else if (title.startsWith('$uname的动态')) {
+              title = title.substring('$uname的动态'.length).trim();
+            } else if (title.startsWith('$uname: ')) {
+              title = title.substring('$uname: '.length).trim();
+            } else if (title.startsWith('$uname：')) {
+              title = title.substring('$uname：'.length).trim();
+            }
+          }
+          if (title.isNotEmpty) {
+            articleList!.insert(0, FeedArticle(type: 'title', title: title));
           }
         }
-        if (title.isNotEmpty) {
-          articleList!.insert(0, FeedArticle(type: 'title', title: title));
+        if (!data.messageCover.isNullOrEmpty) {
+          articleList!
+              .insert(0, FeedArticle(type: 'image', url: data.messageCover));
         }
-      }
-      if (!data.messageCover.isNullOrEmpty) {
-        articleList!
-            .insert(0, FeedArticle(type: 'image', url: data.messageCover));
-      }
-      if (!data.message.isNullOrEmpty &&
-          !articleList!.any((item) => item.type == 'text')) {
-        articleList!.add(FeedArticle(type: 'text', message: data.message));
-      }
-      articleImgList = articleList!
-          .where((item) => item.type == 'image')
-          .map((item) => item.url.orEmpty)
-          .toList();
-      // 补充 picArr 中的图片：当 articleList 缺少 image 条目时，
-      // 用 data.picArr 补全，确保详情页能显示动态中的图片
-      if (!data.picArr.isNullOrEmpty) {
-        final existing = articleImgList!.toSet();
-        for (var img in data.picArr!) {
-          if (!existing.contains(img)) {
+        if (!data.message.isNullOrEmpty &&
+            !articleList!.any((item) => item.type == 'text')) {
+          articleList!.add(FeedArticle(type: 'text', message: data.message));
+        }
+        articleImgList = articleList!
+            .where((item) => item.type == 'image')
+            .map((item) => item.url.orEmpty)
+            .toList();
+        if (!data.picArr.isNullOrEmpty) {
+          final existing = articleImgList!.toSet();
+          for (var img in data.picArr!) {
+            if (!existing.contains(img)) {
+              articleList!.add(FeedArticle(type: 'image', url: img));
+              articleImgList!.add(img);
+            }
+          }
+        }
+      } else {
+        debugPrint('[feedDetail] _processFeedData branch=else(message+picArr) id=${data.id}');
+        articleList = [];
+        articleImgList = [];
+        if (!data.message.isNullOrEmpty) {
+          articleList!.add(FeedArticle(type: 'text', message: data.message));
+        }
+        if (!data.picArr.isNullOrEmpty) {
+          for (var img in data.picArr!) {
             articleList!.add(FeedArticle(type: 'image', url: img));
             articleImgList!.add(img);
           }
         }
       }
-    } else {
-      // messageRawOutput 为 null 或 "null" 字符串:
-      // 用 message + picArr 合成 articleList。
-      // 注意:这里用 else 而非 else if,确保 getFeedData() 返回完整数据时
-      // 总是重新合成 articleList,覆盖预加载阶段合成的旧数据。
-      // 此前用 else if (articleList.isNullOrEmpty) 会导致:预加载已合成
-      // articleList(非空)时,网络返回后跳过本分支,articleList 停留在
-      // 预加载的旧值,无法反映完整数据中的 picArr 等字段。
-      articleList = [];
-      articleImgList = [];
-      if (!data.message.isNullOrEmpty) {
-        articleList!.add(FeedArticle(type: 'text', message: data.message));
+      debugPrint('[feedDetail] _processFeedData before topReply id=${data.id} '
+          'topReplyRows=${data.topReplyRows == null ? "null" : (data.topReplyRows!.isEmpty ? "空数组" : "有${data.topReplyRows!.length}项")} '
+          'replyRows=${data.replyRows == null ? "null" : (data.replyRows!.isEmpty ? "空数组" : "有${data.replyRows!.length}项")}');
+      if (!data.topReplyRows.isNullOrEmpty) {
+        topReply = data.topReplyRows![0];
+      } else if (topReply == null && !data.replyRows.isNullOrEmpty) {
+        topReply = data.replyRows![0];
       }
-      if (!data.picArr.isNullOrEmpty) {
-        for (var img in data.picArr!) {
-          articleList!.add(FeedArticle(type: 'image', url: img));
-          articleImgList!.add(img);
-        }
+      if (!data.replyMeRows.isNullOrEmpty) {
+        _replyMe = data.replyMeRows![0];
       }
+      feedUsername = data.userInfo?.username;
+      feedUid = data.uid;
+      feedTypeName = data.feedTypeName;
+      replyNum = data.replynum;
+      debugPrint('[feedDetail] _processFeedData done id=${data.id} hashCode=${hashCode} '
+          'articleListAfter=${articleList == null ? "null" : (articleList!.isEmpty ? "空数组" : "${articleList!.length}项")}');
+    } catch (e, stack) {
+      debugPrint('[feedDetail] _processFeedData EXCEPTION id=${data.id} hashCode=${hashCode} error=$e\n$stack');
+      // 异常时清空 articleList,让 onInit 的 canShowPreloaded=false 走网络加载
+      articleList = null;
+      articleImgList = null;
     }
-    if (!data.topReplyRows.isNullOrEmpty) {
-      topReply = data.topReplyRows![0];
-    } else if (topReply == null && !data.replyRows.isNullOrEmpty) {
-      // 主页列表预加载数据无 topReplyRows 时，用 replyRows[0]（列表热评）作为热评，
-      // 使评论区在预加载阶段即可显示热评，无需等待评论接口加载完成
-      topReply = data.replyRows![0];
-    }
-    if (!data.replyMeRows.isNullOrEmpty) {
-      _replyMe = data.replyMeRows![0];
-    }
-    feedUsername = data.userInfo?.username;
-    feedUid = data.uid;
-    feedTypeName = data.feedTypeName;
-    replyNum = data.replynum;
-    debugPrint('[feedDetail] _processFeedData done id=${data.id} '
-        'articleListAfter=${articleList == null ? "null" : (articleList!.isEmpty ? "空数组" : "${articleList!.length}项")}');
   }
 
   Future<void> getFeedData() async {
