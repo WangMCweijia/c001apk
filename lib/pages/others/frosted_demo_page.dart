@@ -43,10 +43,8 @@ class FrostedDemoPage extends StatelessWidget {
             // 背景：渐变 + 彩色装饰，让毛玻璃效果可见
             Positioned.fill(
               child: Container(
-                decoration: BoxDecoration(
-                  gradient: AppTheme.backgroundDecoration(
-                      Theme.of(context).brightness),
-                ),
+                decoration: AppTheme.backgroundDecoration(
+                    Theme.of(context).brightness),
                 child: Stack(
                   children: [
                     _colorCircle(
