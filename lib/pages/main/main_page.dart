@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -185,7 +186,11 @@ class _MainPageState extends State<MainPage> {
         ],
       );
       final BoxDecoration capsuleDecoration = BoxDecoration(
-        color: isDark ? AppTheme.darkCardBg : Colors.white,
+        // 毛玻璃背景：半透明色让 BackdropFilter 的模糊可见
+        // 日间 55% 白底，夜间 55% darkCardBg
+        color: isDark
+            ? const Color(0x8C161B1A)
+            : Colors.white.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
@@ -237,15 +242,22 @@ class _MainPageState extends State<MainPage> {
 
       return DecoratedBox(
         decoration: shadowDecoration,
-        child: AnimatedSize(
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeInOutCubic,
-          alignment: Alignment.centerRight,
-          child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            decoration: capsuleDecoration,
-            child: capsuleChild,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          // 毛玻璃：模糊按钮背后的内容，叠加半透明 capsuleDecoration
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeInOutCubic,
+              alignment: Alignment.centerRight,
+              child: Container(
+                height: 56,
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                decoration: capsuleDecoration,
+                child: capsuleChild,
+              ),
+            ),
           ),
         ),
       );

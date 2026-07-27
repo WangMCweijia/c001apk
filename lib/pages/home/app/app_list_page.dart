@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 
+import '../../../components/frosted_fab.dart';
 import '../../../pages/home/app/app_list_controller.dart';
 import '../../../pages/home/return_top_controller.dart';
+import '../../../utils/app_theme.dart';
 import '../../../utils/extensions.dart';
 import '../../../utils/storage_util.dart';
 
@@ -102,11 +104,15 @@ class _AppListPageState extends State<AppListPage>
                     parent: _fabAnimationCtr!,
                     curve: Curves.easeInOut,
                   )),
-                  child: FloatingActionButton(
-                    heroTag: null,
+                  child: FrostedFAB(
                     onPressed: () => Get.toNamed('/appUpdate'),
                     tooltip: 'Update',
-                    child: const Icon(Icons.update),
+                    child: Icon(
+                      Icons.update,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkPrimary
+                          : AppTheme.lightPrimary,
+                    ),
                   ),
                 )
               : null,

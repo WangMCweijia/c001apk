@@ -7,6 +7,7 @@ import 'package:get/get_navigation/src/dialog/dialog_route.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../components/cards/app_info_card.dart';
+import '../../components/frosted_fab.dart';
 import '../../components/sticky_sliver_to_box_adapter.dart';
 import '../../logic/state/loading_state.dart';
 import '../../pages/app/app_content.dart';
@@ -165,24 +166,18 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
           ),
         ),
         child: isExpanded
-            ? FloatingActionButton(
-                key: const ValueKey('publish'),
-                heroTag: null,
-                onPressed: () => _onAppPublish(controller),
-                tooltip: 'Create Feed',
-                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
-                foregroundColor: activeColor,
-                child: const Icon(Icons.add),
-              )
-            : FloatingActionButton(
-                key: const ValueKey('refresh'),
-                heroTag: null,
-                onPressed: _onAppRefresh,
-                tooltip: 'Refresh',
-                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
-                foregroundColor: activeColor,
-                child: const Icon(Icons.refresh_rounded),
-              ),
+          ? FrostedFAB(
+              key: const ValueKey('publish'),
+              onPressed: () => _onAppPublish(controller),
+              tooltip: 'Create Feed',
+              child: Icon(Icons.add, color: activeColor),
+            )
+          : FrostedFAB(
+              key: const ValueKey('refresh'),
+              onPressed: _onAppRefresh,
+              tooltip: 'Refresh',
+              child: Icon(Icons.refresh_rounded, color: activeColor),
+            ),
       );
     });
   }

@@ -16,6 +16,7 @@ import '../../utils/menu_labels.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/storage_util.dart';
 import '../../utils/utils.dart';
+import '../../components/frosted_fab.dart';
 
 // ignore: constant_identifier_names
 enum TopicMenuItem { Copy, Share, Sort, Follow, Block }
@@ -172,23 +173,17 @@ class _TopicPageState extends State<TopicPage> with TickerProviderStateMixin {
           ),
         ),
         child: isExpanded
-            ? FloatingActionButton(
+            ? FrostedFAB(
                 key: const ValueKey('publish'),
-                heroTag: null,
                 onPressed: _onTopicPublish,
                 tooltip: 'Create Feed',
-                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
-                foregroundColor: activeColor,
-                child: const Icon(Icons.add),
+                child: Icon(Icons.add, color: activeColor),
               )
-            : FloatingActionButton(
+            : FrostedFAB(
                 key: const ValueKey('refresh'),
-                heroTag: null,
                 onPressed: _onTopicRefresh,
                 tooltip: 'Refresh',
-                backgroundColor: isDark ? AppTheme.darkCardBg : Colors.white,
-                foregroundColor: activeColor,
-                child: const Icon(Icons.refresh_rounded),
+                child: Icon(Icons.refresh_rounded, color: activeColor),
               ),
       );
     });

@@ -11,6 +11,7 @@ import '../../components/cards/feed_reply_card.dart';
 import '../../components/cards/icon_mini_scroll_card.dart';
 import '../../components/feed_article_body.dart';
 import '../../components/footer.dart';
+import '../../components/frosted_fab.dart';
 import '../../components/sliver_pinned_box_adapter.dart';
 import '../../components/cards/feed_card.dart';
 import '../../logic/model/feed/datum.dart';
@@ -466,19 +467,23 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   parent: _fabAnimationCtr!,
                   curve: Curves.easeInOut,
                 )),
-                child: FloatingActionButton(
-                  heroTag: null,
-                  tooltip: 'Reply',
-                  onPressed: () {
-                    _onReply(
-                      ReplyType.feed,
-                      _feedController.id,
-                      _feedController.feedUsername,
-                      null,
-                    );
-                  },
-                  child: const Icon(Icons.reply),
-                ),
+                child: FrostedFAB(
+            tooltip: 'Reply',
+            onPressed: () {
+              _onReply(
+                ReplyType.feed,
+                _feedController.id,
+                _feedController.feedUsername,
+                null,
+              );
+            },
+            child: Icon(
+              Icons.reply,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkPrimary
+                  : AppTheme.lightPrimary,
+            ),
+          ),
               )
             : const SizedBox(),
       ),
