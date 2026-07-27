@@ -229,21 +229,11 @@ class _MainPageState extends State<MainPage> {
                 ],
               ],
             )
-          : (isLogin
-              ? _capsuleActionButton(
-                  isDark: isDark,
-                  isExpanded: false,
-                  canRefresh: canRefresh,
-                )
-              : _capsuleIconButton(
-                  icon: _selectedIndex == 1
-                      ? Icons.person
-                      : Icons.person_outline,
-                  label: '我的',
-                  selected: _selectedIndex == 1,
-                  isDark: isDark,
-                  onTap: () => onDestinationSelected(1),
-                ));
+          : _capsuleActionButton(
+              isDark: isDark,
+              isExpanded: false,
+              canRefresh: canRefresh,
+            );
 
       return DecoratedBox(
         decoration: shadowDecoration,
