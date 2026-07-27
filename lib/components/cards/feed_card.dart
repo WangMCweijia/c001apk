@@ -1,4 +1,5 @@
 import 'package:c001apk_flutter/components/network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -38,15 +39,20 @@ class FeedCard extends StatelessWidget {
   final Function(dynamic id, dynamic like)? onLike;
 
   void _onViewFeed() {
-    // 只有 messageRawOutput 存在且非 "null" 时才预加载(这是完整数据的标志)。
-    // 搜索结果、浏览历史、收藏等场景的 Datum 是精简数据,
-    // 缺少 messageRawOutput 或其他关键字段,传 preloadedData 会导致
-    // 详情页预加载阶段合成空 articleList 或渲染异常,显示空白页面。
-    // 不传 preloadedData 时,详情页走完整网络加载(/v6/feed/detail),
-    // 保证内容正确显示。代价是这些场景点击后会短暂转圈,但能确保打开。
+    // 预加载策略:主页列表的 Datum 有 message + picArr,可合成 articleList,
+    // 传 preloadedData 能避免点击后转圈,体验更好。
+    // 浏览历史的 Datum 是从 FavHistoryItem 精简转换,字段严重缺失,固定不预加载。
+    // 搜索结果等其他场景按 message/picArr 是否存在判断,有任一即预加载。
+    // 详情页 _processFeedData 已处理 articleList 为空时用 message+picArr 合成,
+    // 且 getFeedData() 返回完整数据后会重新合成,不会停留在空数组。
     final bool shouldPreload = !isHistory &&
-        data.messageRawOutput != null &&
-        data.messageRawOutput != 'null';
+        (!data.message.isNullOrEmpty || !data.picArr.isNullOrEmpty);
+    debugPrint('[feedDetail] _onViewFeed id=${data.id} '
+        'isHistory=$isHistory '
+        'shouldPreload=$shouldPreload '
+        'message=${data.message == null ? "null" : (data.message!.isEmpty ? "空字符串" : "有值")} '
+        'picArr=${data.picArr == null ? "null" : (data.picArr!.isEmpty ? "空数组" : "有${data.picArr!.length}张图")} '
+        'messageRawOutput=${data.messageRawOutput == null ? "null" : (data.messageRawOutput == "null" ? '"null"字符串' : "有值")}');
     Get.toNamed('/feed/${data.id}',
         arguments: shouldPreload ? {'datum': data} : null);
   }

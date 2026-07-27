@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../logic/model/fav_history/fav_history.dart';
@@ -67,6 +68,11 @@ class FeedController extends CommonController {
 
   /// 处理动态数据：解析 messageRawOutput、补充 picArr、提取字段
   void _processFeedData(Datum data) {
+    debugPrint('[feedDetail] _processFeedData id=${data.id} '
+        'messageRawOutput=${data.messageRawOutput == null ? "null" : (data.messageRawOutput == "null" ? '"null"' : "有值(${data.messageRawOutput!.length}字符)")} '
+        'message=${data.message == null ? "null" : (data.message!.isEmpty ? "空字符串" : "有值(${data.message!.length}字符)")} '
+        'picArr=${data.picArr == null ? "null" : (data.picArr!.isEmpty ? "空数组" : "有${data.picArr!.length}张图")} '
+        'articleListBefore=${articleList == null ? "null" : (articleList!.isEmpty ? "空数组" : "${articleList!.length}项")}');
     if (data.messageRawOutput != null && data.messageRawOutput != 'null') {
       List<dynamic> jsonList = jsonDecode(data.messageRawOutput!);
       articleList = jsonList
@@ -155,11 +161,19 @@ class FeedController extends CommonController {
     feedUid = data.uid;
     feedTypeName = data.feedTypeName;
     replyNum = data.replynum;
+    debugPrint('[feedDetail] _processFeedData done id=${data.id} '
+        'articleListAfter=${articleList == null ? "null" : (articleList!.isEmpty ? "空数组" : "${articleList!.length}项")}');
   }
 
   Future<void> getFeedData() async {
+    debugPrint('[feedDetail] getFeedData start id=$id url=/v6/feed/detail?id=$id');
     LoadingState<dynamic> response =
         await NetworkRepo.getDataFromUrl(url: '/v6/feed/detail?id=$id');
+    debugPrint('[feedDetail] getFeedData response id=$id '
+        'type=${response.runtimeType} '
+        'isSuccess=${response is Success} '
+        'isError=${response is Error} '
+        'isEmpty=${response is Empty}');
     if (response is Success) {
       Datum data = (response.response as Datum);
       _processFeedData(data);
@@ -198,11 +212,11 @@ class FeedController extends CommonController {
   @override
   void onInit() {
     super.onInit();
-    // 预加载：如果有预传递的数据，立即显示避免转圈，然后后台获取最新数据+评论。
-    // 预加载数据若无 messageRawOutput，用 message+picArr 合成 articleList，
-    // 保证与 getFeedData() 返回后布局一致（均用 SliverList），避免画面跳动。
-    // topReply 在预加载阶段从 replyRows[0] 兜底设置，评论加载后由 handleResponse
-    // 前置到评论区列表，使热评显示在评论区而非正文区。
+    debugPrint('[feedDetail] onInit id=$id '
+        'preloadedData=${preloadedData == null ? "null(不预加载)" : "有(预加载)"} '
+        'preloadedMessage=${preloadedData?.message == null ? "null" : (preloadedData!.message!.isEmpty ? "空字符串" : "有值")} '
+        'preloadedPicArr=${preloadedData?.picArr == null ? "null" : (preloadedData!.picArr!.isEmpty ? "空数组" : "有${preloadedData!.picArr!.length}张图")} '
+        'preloadedMessageRawOutput=${preloadedData?.messageRawOutput == null ? "null" : (preloadedData!.messageRawOutput == "null" ? '"null"字符串' : "有值")}');
     if (preloadedData != null) {
       _processFeedData(preloadedData!);
       feedState.value = LoadingState.success(preloadedData!);

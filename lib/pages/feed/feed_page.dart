@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -110,6 +111,8 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   ];
 
   Widget _buildFeedContent(LoadingState feedState) {
+    debugPrint('[feedDetail] _buildFeedContent feedState=${feedState.runtimeType} '
+        'articleList=${_feedController.articleList == null ? "null" : (_feedController.articleList!.isEmpty ? "空数组" : "${_feedController.articleList!.length}项")}');
     switch (feedState) {
       case Empty():
         return GestureDetector(
