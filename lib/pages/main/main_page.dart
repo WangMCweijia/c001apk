@@ -187,10 +187,10 @@ class _MainPageState extends State<MainPage> {
       );
       final BoxDecoration capsuleDecoration = BoxDecoration(
         // 毛玻璃背景：半透明色让 BackdropFilter 的模糊可见
-        // 日间 55% 白底，夜间 55% darkCardBg
+        // 日间 40% 白底，夜间 40% darkCardBg
         color: isDark
-            ? const Color(0x8C161B1A)
-            : Colors.white.withValues(alpha: 0.55),
+            ? const Color(0xFF161B1A).withValues(alpha: 0.40)
+            : Colors.white.withValues(alpha: 0.40),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,

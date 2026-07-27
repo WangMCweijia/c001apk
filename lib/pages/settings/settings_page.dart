@@ -260,13 +260,6 @@ class _SettingsPageState extends State<SettingsPage>
             onTap: () =>
                 Get.toNamed('/about', parameters: {'version': _version}),
           ),
-          // 临时入口：毛玻璃透明度对比（确认后删除）
-          ListTile(
-            title: const Text('毛玻璃透明度对比'),
-            subtitle: const Text('临时入口，选定后移除'),
-            leading: const Icon(Icons.compare),
-            onTap: () => Get.toNamed('/frostedDemo'),
-          ),
           Obx(
             () => ListTile(
               title: const Text('清除缓存'),
