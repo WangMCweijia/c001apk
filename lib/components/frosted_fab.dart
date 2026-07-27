@@ -17,22 +17,25 @@ class FrostedFAB extends StatelessWidget {
     required this.child,
     this.tooltip,
     this.size = 56.0,
+    this.bgAlpha = 0.55,
   });
 
   final VoidCallback? onPressed;
   final Widget child;
   final String? tooltip;
   final double size;
+  /// 背景色透明度（0.0~1.0）。日间为白底 alpha，夜间为 darkCardBg alpha。
+  /// 默认 0.55（55%）。值越低越透明，毛玻璃感越强。
+  final double bgAlpha;
 
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     // 半透明背景色：让 BackdropFilter 的模糊可见
-    // 日间：55% 白底；夜间：55% darkCardBg
     final Color bgColor = isDark
-        ? const Color(0x8C161B1A)
-        : Colors.white.withValues(alpha: 0.55);
+        ? const Color(0xFF161B1A).withValues(alpha: bgAlpha)
+        : Colors.white.withValues(alpha: bgAlpha);
     // 细边框强化玻璃质感
     final Color borderColor = isDark
         ? const Color(0x665EFF9F)

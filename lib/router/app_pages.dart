@@ -15,6 +15,7 @@ import '../pages/login/login_page.dart';
 import '../pages/main/main_page.dart';
 import '../pages/noitfication/notification_page.dart';
 import '../pages/others/copy_page.dart';
+import '../pages/others/frosted_demo_page.dart';
 import '../pages/others/imageview_page.dart';
 import '../pages/search/search_page.dart';
 import '../pages/search/search_result_page.dart';
@@ -133,6 +134,10 @@ class AppPages {
     _getPage(
       name: '/settings',
       page: () => const SettingsPage(),
+    ),
+    _getPage(
+      name: '/frostedDemo',
+      page: () => const FrostedDemoPage(),
     ),
   ];
 }
