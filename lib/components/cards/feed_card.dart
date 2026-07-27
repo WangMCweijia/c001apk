@@ -40,17 +40,13 @@ class FeedCard extends StatelessWidget {
 
   void _onViewFeed() {
     // 预加载策略:
-    // - 主页列表(messageList 等):Datum 完整,可合成 articleList,预加载避免转圈
     // - 浏览历史(isHistory):Datum 从 FavHistoryItem 精简转换,字段缺失,不预加载
-    // - 搜索结果等场景:即使有 message/picArr,预加载后 getFeedData() 返回完整数据时
-    //   会被重置 articleList 为 [],导致显示空白 FeedCard。根因未完全定位,
-    //   保守做法:非主页场景一律不预加载,走完整网络加载。
-    // isHistory 标志来自 FeedCard 构造参数,主页列表构造时不传(默认 false)。
-    // 但搜索结果也是 isHistory=false,无法区分。改用更可靠的判断:
-    // 主页列表的 Datum 通常带 messageRawOutput(主页接口返回此字段),
-    // 搜索结果的 Datum 通常没有 messageRawOutput。以此区分。
-    final bool shouldPreload =
-        !isHistory && data.messageRawOutput != null && data.messageRawOutput != 'null';
+    // - 其他场景(主页列表/搜索结果等):message 或 picArr 有值即预加载,
+    //   详情页 onInit 会检查预加载合成的 articleList 是否非空,
+    //   只有非空才设置 Success(避免渲染空白 FeedCard);为空则保持 Loading
+    //   等待 getFeedData() 返回完整数据后重新合成并渲染。
+    final bool shouldPreload = !isHistory &&
+        (!data.message.isNullOrEmpty || !data.picArr.isNullOrEmpty);
     debugPrint('[feedDetail] _onViewFeed id=${data.id} '
         'isHistory=$isHistory '
         'shouldPreload=$shouldPreload '

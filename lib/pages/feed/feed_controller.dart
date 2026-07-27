@@ -123,18 +123,14 @@ class FeedController extends CommonController {
           }
         }
       }
-    } else if (articleList.isNullOrEmpty ||
-        data.messageRawOutput == 'null') {
-      // 无 messageRawOutput（主页列表预加载数据通常如此）：用 message + picArr
-      // 合成 articleList，使详情页预加载即采用 SliverList 布局，与完整数据一致，
-      // 避免评论区加载完后从 FeedCard 切换到 SliverList 导致画面跳动
-      //
-      // 另：当 getFeedData() 返回的完整数据的 messageRawOutput 为 null 或 "null"
-      // 字符串时，上面的 if 分支不进入；若预加载阶段已把 articleList 合成为
-      // 空数组（如搜索结果返回的精简 Datum 无 message/picArr），原条件
-      // articleList == null 为 false 会跳过本分支，导致 articleList 停留空数组，
-      // 详情页持续空白。这里把条件改为 articleList.isNullOrEmpty，只要为空就
-      // 重新合成，覆盖完整数据返回时 messageRawOutput 为 null 的场景。
+    } else {
+      // messageRawOutput 为 null 或 "null" 字符串:
+      // 用 message + picArr 合成 articleList。
+      // 注意:这里用 else 而非 else if,确保 getFeedData() 返回完整数据时
+      // 总是重新合成 articleList,覆盖预加载阶段合成的旧数据。
+      // 此前用 else if (articleList.isNullOrEmpty) 会导致:预加载已合成
+      // articleList(非空)时,网络返回后跳过本分支,articleList 停留在
+      // 预加载的旧值,无法反映完整数据中的 picArr 等字段。
       articleList = [];
       articleImgList = [];
       if (!data.message.isNullOrEmpty) {
@@ -219,7 +215,18 @@ class FeedController extends CommonController {
         'preloadedMessageRawOutput=${preloadedData?.messageRawOutput == null ? "null" : (preloadedData!.messageRawOutput == "null" ? '"null"字符串' : "有值")}');
     if (preloadedData != null) {
       _processFeedData(preloadedData!);
-      feedState.value = LoadingState.success(preloadedData!);
+      // 只有预加载合成的 articleList 非空时才设置 Success,
+      // 避免精简 Datum(message/picArr 都空)合成空 articleList 后
+      // 渲染空白 FeedCard 导致白屏。
+      // articleList 为空时保持 Loading,等 getFeedData() 返回完整数据
+      // 后重新合成并渲染。
+      final bool canShowPreloaded =
+          articleList != null && articleList!.isNotEmpty;
+      debugPrint('[feedDetail] onInit canShowPreloaded=$canShowPreloaded '
+          'articleListSize=${articleList?.length ?? 0}');
+      if (canShowPreloaded) {
+        feedState.value = LoadingState.success(preloadedData!);
+      }
       getFeedData();
     } else {
       getFeedData();
