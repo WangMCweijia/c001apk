@@ -39,14 +39,18 @@ class FeedCard extends StatelessWidget {
   final Function(dynamic id, dynamic like)? onLike;
 
   void _onViewFeed() {
-    // 预加载策略:主页列表的 Datum 有 message + picArr,可合成 articleList,
-    // 传 preloadedData 能避免点击后转圈,体验更好。
-    // 浏览历史的 Datum 是从 FavHistoryItem 精简转换,字段严重缺失,固定不预加载。
-    // 搜索结果等其他场景按 message/picArr 是否存在判断,有任一即预加载。
-    // 详情页 _processFeedData 已处理 articleList 为空时用 message+picArr 合成,
-    // 且 getFeedData() 返回完整数据后会重新合成,不会停留在空数组。
-    final bool shouldPreload = !isHistory &&
-        (!data.message.isNullOrEmpty || !data.picArr.isNullOrEmpty);
+    // 预加载策略:
+    // - 主页列表(messageList 等):Datum 完整,可合成 articleList,预加载避免转圈
+    // - 浏览历史(isHistory):Datum 从 FavHistoryItem 精简转换,字段缺失,不预加载
+    // - 搜索结果等场景:即使有 message/picArr,预加载后 getFeedData() 返回完整数据时
+    //   会被重置 articleList 为 [],导致显示空白 FeedCard。根因未完全定位,
+    //   保守做法:非主页场景一律不预加载,走完整网络加载。
+    // isHistory 标志来自 FeedCard 构造参数,主页列表构造时不传(默认 false)。
+    // 但搜索结果也是 isHistory=false,无法区分。改用更可靠的判断:
+    // 主页列表的 Datum 通常带 messageRawOutput(主页接口返回此字段),
+    // 搜索结果的 Datum 通常没有 messageRawOutput。以此区分。
+    final bool shouldPreload =
+        !isHistory && data.messageRawOutput != null && data.messageRawOutput != 'null';
     debugPrint('[feedDetail] _onViewFeed id=${data.id} '
         'isHistory=$isHistory '
         'shouldPreload=$shouldPreload '
