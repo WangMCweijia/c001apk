@@ -167,80 +167,8 @@ class _ImageViewPageState extends State<ImageViewPage> {
           body: Stack(
             alignment: Alignment.center,
             children: [
-              PageView.builder(
-                  controller: _pageController,
-                  itemCount: _imgList.length,
-                  // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
-                  physics: _scaleStates[_initialPage] ==
-                          PhotoViewScaleState.zoomedIn
-                      ? const NeverScrollableScrollPhysics()
-                      : const BouncingScrollPhysics(),
-                  onPageChanged: (index) {
-                    setState(() {
-                      _initialPage = index;
-                      _heroTag =
-                          '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
-                    });
-                    _currentPageStream.add(index);
-                    _precacheLarge(index);
-                  },
-                  itemBuilder: (context, index) {
-                    final thumbUrl =
-                        '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
-                    final activeTag = index == _initialPage
-                        ? (_heroTag ?? thumbUrl)
-                        : null;
-                    final useLarge = _largeReady.contains(index);
-                    final imageUrl = useLarge ? _imgList[index] : thumbUrl;
-                    return PhotoView(
-                      imageProvider: CachedNetworkImageProvider(imageUrl),
-                      backgroundDecoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      initialScale: PhotoViewComputedScale.contained,
-                      minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.covered * 3,
-                      heroAttributes: activeTag != null
-                          ? PhotoViewHeroAttributes(tag: activeTag)
-                          : null,
-                      scaleStateChangedCallback: (state) {
-                        setState(() => _scaleStates[index] = state);
-                      },
-                      loadingBuilder: (context, event) {
-                        final progress = event == null
-                            ? null
-                            : event.cumulativeBytesLoaded /
-                                (event.expectedTotalBytes ?? 1);
-                        return CachedNetworkImage(
-                          imageUrl: thumbUrl,
-                          fit: BoxFit.contain,
-                          width: double.infinity,
-                          height: double.infinity,
-                          placeholder: (context, url) => Center(
-                            child: SizedBox(
-                              width: 20.0,
-                              height: 20.0,
-                              child: CircularProgressIndicator(
-                                  value: progress ?? 0),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Center(
-                            child: SizedBox(
-                              width: 20.0,
-                              height: 20.0,
-                              child: CircularProgressIndicator(
-                                  value: progress ?? 0),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              // 手势层：放大时仅保留长按，点击/滑动退出交由 PhotoView 独占
               GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: isZoomed ? null : _onExit,
+                onTap: _onExit,
                 onVerticalDragEnd: isZoomed
                     ? null
                     : (details) {
@@ -310,7 +238,76 @@ class _ImageViewPageState extends State<ImageViewPage> {
                       );
                     });
                 },
-              ),
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _imgList.length,
+                  // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
+                  physics: _scaleStates[_initialPage] ==
+                          PhotoViewScaleState.zoomedIn
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(),
+                  onPageChanged: (index) {
+                    setState(() {
+                      _initialPage = index;
+                      _heroTag =
+                          '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
+                    });
+                    _currentPageStream.add(index);
+                    _precacheLarge(index);
+                  },
+                  itemBuilder: (context, index) {
+                    final thumbUrl =
+                        '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
+                    final activeTag = index == _initialPage
+                        ? (_heroTag ?? thumbUrl)
+                        : null;
+                    final useLarge = _largeReady.contains(index);
+                    final imageUrl = useLarge ? _imgList[index] : thumbUrl;
+                    return PhotoView(
+                      imageProvider: CachedNetworkImageProvider(imageUrl),
+                      backgroundDecoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      initialScale: PhotoViewComputedScale.contained,
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 3,
+                      heroAttributes: activeTag != null
+                          ? PhotoViewHeroAttributes(tag: activeTag)
+                          : null,
+                      scaleStateChangedCallback: (state) {
+                        setState(() => _scaleStates[index] = state);
+                      },
+                      loadingBuilder: (context, event) {
+                        final progress = event == null
+                            ? null
+                            : event.cumulativeBytesLoaded /
+                                (event.expectedTotalBytes ?? 1);
+                        return CachedNetworkImage(
+                          imageUrl: thumbUrl,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: double.infinity,
+                          placeholder: (context, url) => Center(
+                            child: SizedBox(
+                              width: 20.0,
+                              height: 20.0,
+                              child: CircularProgressIndicator(
+                                  value: progress ?? 0),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Center(
+                            child: SizedBox(
+                              width: 20.0,
+                              height: 20.0,
+                              child: CircularProgressIndicator(
+                                  value: progress ?? 0),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               if (Utils.isDesktop && _imgList.length != 1)
                 Positioned(
                   left: 0,
