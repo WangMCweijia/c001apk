@@ -275,7 +275,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                       minScale: PhotoViewComputedScale.contained,
                       maxScale: PhotoViewComputedScale.covered * 3,
                       heroAttributes: activeTag != null
-                          ? HeroAttributes(tag: activeTag)
+                          ? PhotoViewHeroAttributes(tag: activeTag)
                           : null,
                       scaleStateChangedCallback: (state) {
                         setState(() => _scaleStates[index] = state);
