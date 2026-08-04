@@ -168,7 +168,9 @@ class _ImageViewPageState extends State<ImageViewPage> {
             alignment: Alignment.center,
             children: [
               GestureDetector(
-                onTap: _onExit,
+                // 不设置 onTap，避免 TapGestureRecognizer 与 PhotoView 的
+                // ScaleGestureRecognizer 竞争第一根手指导致双指缩放失效。
+                // 点击退出改用 PhotoView.onTapUp 处理。
                 onVerticalDragEnd: isZoomed
                     ? null
                     : (details) {
@@ -265,6 +267,8 @@ class _ImageViewPageState extends State<ImageViewPage> {
                     final imageUrl = useLarge ? _imgList[index] : thumbUrl;
                     return PhotoView(
                       imageProvider: CachedNetworkImageProvider(imageUrl),
+                      onTapUp: (context, details, controllerValue) =>
+                          _onExit(),
                       backgroundDecoration: const BoxDecoration(
                         color: Colors.transparent,
                       ),
