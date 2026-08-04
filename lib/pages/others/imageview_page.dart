@@ -308,6 +308,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                     );
                   },
                 ),
+              ),
               if (Utils.isDesktop && _imgList.length != 1)
                 Positioned(
                   left: 0,
