@@ -200,14 +200,16 @@ class _MainPageState extends State<MainPage> {
 
       // 展开态：主页 | 分隔线 | 我的 | 分隔线 | 发布
       // 收起态：仅刷新按钮（占据发布位置，容器宽度收缩）
-      // 每个按钮元素独立用 _collapsingItem 控制宽度+透明度过渡,
-      // 与背景容器宽度过渡(280ms)协调,避免内容瞬间切换。
-      final Widget capsuleChild = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _collapsingItem(
-            expanded: isExpanded,
-            child: _capsuleIconButton(
+      // AnimatedCrossFade 同时处理宽度过渡与内容淡入淡出,
+      // 与背景容器过渡动画(280ms)协调,避免内容瞬间切换。
+      final Widget capsuleChild = AnimatedCrossFade(
+        duration: const Duration(milliseconds: 280),
+        crossFadeState:
+            isExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+        firstChild: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _capsuleIconButton(
               icon: _selectedIndex == 0
                   ? Icons.home
                   : Icons.home_outlined,
@@ -216,14 +218,8 @@ class _MainPageState extends State<MainPage> {
               isDark: isDark,
               onTap: () => onDestinationSelected(0),
             ),
-          ),
-          _collapsingItem(
-            expanded: isExpanded,
-            child: _capsuleDivider(isDark),
-          ),
-          _collapsingItem(
-            expanded: isExpanded,
-            child: _capsuleIconButton(
+            _capsuleDivider(isDark),
+            _capsuleIconButton(
               icon: _selectedIndex == 1
                   ? Icons.person
                   : Icons.person_outline,
@@ -232,27 +228,21 @@ class _MainPageState extends State<MainPage> {
               isDark: isDark,
               onTap: () => onDestinationSelected(1),
             ),
-          ),
-          if (isLogin) ...[
-            _collapsingItem(
-              expanded: isExpanded,
-              child: _capsuleDivider(isDark),
-            ),
-            _capsuleActionButton(
-              isDark: isDark,
-              isExpanded: isExpanded,
-              canRefresh: canRefresh,
-            ),
-          ] else
-            _collapsingItem(
-              expanded: !isExpanded,
-              child: _capsuleActionButton(
+            if (isLogin) ...[
+              _capsuleDivider(isDark),
+              _capsuleActionButton(
                 isDark: isDark,
-                isExpanded: false,
+                isExpanded: true,
                 canRefresh: canRefresh,
               ),
-            ),
-        ],
+            ],
+          ],
+        ),
+        secondChild: _capsuleActionButton(
+          isDark: isDark,
+          isExpanded: false,
+          canRefresh: canRefresh,
+        ),
       );
 
       return DecoratedBox(
@@ -272,35 +262,6 @@ class _MainPageState extends State<MainPage> {
         ),
       );
     });
-  }
-
-  /// 可折叠项：展开时宽度过渡到子组件实际宽度并淡入,
-  /// 收起时宽度过渡到0并淡出,与容器背景过渡动画协调。
-  /// 用 ClipRect+OverflowBox 让子组件保持自身尺寸不被压缩,
-  /// 仅外层 SizedBox 控制占用宽度,实现平滑宽度过渡。
-  Widget _collapsingItem({
-    required bool expanded,
-    required Widget child,
-  }) {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeInOutCubic,
-      child: ClipRect(
-        child: SizedBox(
-          width: expanded ? null : 0,
-          child: OverflowBox(
-            maxWidth: double.infinity,
-            alignment: Alignment.centerLeft,
-            child: AnimatedOpacity(
-              opacity: expanded ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOutCubic,
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   /// 胶囊分隔线

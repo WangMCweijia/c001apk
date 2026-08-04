@@ -60,45 +60,48 @@ class _SearchPageState extends State<SearchPage> {
             gradient: AppTheme.appBarGradient(Theme.of(context).brightness),
           ),
         ),
-        title: Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppTheme.appBarForeground(Theme.of(context).brightness)
-                .withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(20),
+        title: TextField(
+          focusNode: _focusNode,
+          onTap: () => _focusNode.requestFocus(),
+          controller: _controller,
+          style: TextStyle(
+            fontSize: 16,
+            color: AppTheme.appBarForeground(Theme.of(context).brightness),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Center(
-            child: TextField(
-              focusNode: _focusNode,
-              onTap: () => _focusNode.requestFocus(),
-              controller: _controller,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.appBarForeground(Theme.of(context).brightness),
-              ),
-              onChanged: (value) {
-                _clearStream.add(value.isNotEmpty);
-              },
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                border: InputBorder.none,
-                hintText: 'Search${!_title.isNullOrEmpty ? ' in $_title' : ''}',
-                hintStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: AppTheme.appBarForeground(Theme.of(context).brightness)
-                      .withValues(alpha: 0.6),
-                ),
-              ),
-              textInputAction: TextInputAction.search,
-              autofocus: true,
-              onSubmitted: (value) {
-                onSearch(value);
-              },
+          onChanged: (value) {
+            _clearStream.add(value.isNotEmpty);
+          },
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            filled: true,
+            fillColor: AppTheme.appBarForeground(Theme.of(context).brightness)
+                .withValues(alpha: 0.08),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            hintText: 'Search${!_title.isNullOrEmpty ? ' in $_title' : ''}',
+            hintStyle: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+              color: AppTheme.appBarForeground(Theme.of(context).brightness)
+                  .withValues(alpha: 0.6),
             ),
           ),
+          textInputAction: TextInputAction.search,
+          autofocus: true,
+          onSubmitted: (value) {
+            onSearch(value);
+          },
         ),
         actions: [
           StreamBuilder(

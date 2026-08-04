@@ -52,11 +52,11 @@ Widget image(
             initialPage: isFeedArticle
                 ? picArr.indexOf(articleImg!)
                 : picArr.indexOf(picArr[index]),
-            heroTag: imgUrl,
+            heroTag: '$imgUrl${Constants.SUFFIX_THUMBNAIL}',
           );
         },
         child: Hero(
-          tag: imgUrl,
+          tag: '$imgUrl${Constants.SUFFIX_THUMBNAIL}',
           // 自定义 Hero 飞行：滑动退出时按方向做抛物线偏移，点击退出走直线
           flightShuttleBuilder:
               (context, animation, direction, fromContext, toContext) {

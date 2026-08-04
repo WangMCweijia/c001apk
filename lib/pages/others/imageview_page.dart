@@ -29,6 +29,9 @@ class _ImageViewPageState extends State<ImageViewPage> {
   String? _heroTag;
   late final _pageController = PageController(initialPage: _initialPage);
 
+  // 已缓存大图的索引集合：用于切换缩略图→大图显示
+  final Set<int> _largeReady = {};
+
   // 边缘侧滑返回识别：manual + overlays:[] 下系统返回手势会被吞掉，
   // 这里用 Listener 自行监听边缘水平滑动，主动调用 Get.back() 完成一次返回。
   // - _edgeSwipeStartX != null 表示当前指针从屏幕左右边缘开始
@@ -65,6 +68,27 @@ class _ImageViewPageState extends State<ImageViewPage> {
     );
     // 重置抛物线方向，点击退出走直线 Hero
     ImageViewPage.heroParallaxDirection = 0;
+    // 延迟一帧后预缓存大图，确保 context 可用
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _precacheLarge(_initialPage);
+    });
+  }
+
+  /// 预缓存大图：加载完成后通过 setState 切换到高清大图显示
+  void _precacheLarge(int index) {
+    if (index < 0 || index >= _imgList.length || _largeReady.contains(index)) {
+      return;
+    }
+    final url = _imgList[index];
+    final provider = CachedNetworkImageProvider(url);
+    final stream = provider.resolve(createLocalImageConfiguration(context));
+    stream.addListener(ImageStreamListener(
+      (info, sync) {
+        if (mounted && !_largeReady.contains(index)) {
+          setState(() => _largeReady.add(index));
+        }
+      },
+    ));
   }
 
   /// 点击退出（Hero 动画直线返回缩略图）
@@ -217,12 +241,18 @@ class _ImageViewPageState extends State<ImageViewPage> {
                   scrollPhysics: const BouncingScrollPhysics(),
                   builder: (BuildContext context, int index) {
                     // 只有当前页设置 Hero tag，确保退出时返回对应缩略图
+                    // Hero tag 使用缩略图 URL，确保初次打开时缩略图已缓存
+                    //（缩略图在列表页已加载过），Hero 动画始终有内容可显示
+                    final thumbUrl =
+                        '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
                     final activeTag = index == _initialPage
-                        ? (_heroTag ?? _imgList[index])
+                        ? (_heroTag ?? thumbUrl)
                         : null;
+                    // 大图已缓存则用大图，否则用缩略图（保证 Hero 动画有内容）
+                    final useLarge = _largeReady.contains(index);
+                    final imageUrl = useLarge ? _imgList[index] : thumbUrl;
                     return PhotoViewGalleryPageOptions(
-                      imageProvider:
-                          CachedNetworkImageProvider(_imgList[index]),
+                      imageProvider: CachedNetworkImageProvider(imageUrl),
                       initialScale: PhotoViewComputedScale.contained,
                       heroAttributes: activeTag != null
                           ? PhotoViewHeroAttributes(tag: activeTag)
@@ -273,10 +303,13 @@ class _ImageViewPageState extends State<ImageViewPage> {
                   onPageChanged: (index) {
                     setState(() {
                       _initialPage = index;
-                      // 更新 heroTag 为当前浏览的图片，退出时返回对应缩略图
-                      _heroTag = _imgList[index];
+                      // 更新 heroTag 为当前浏览图片的缩略图 URL
+                      _heroTag =
+                          '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
                     });
                     _currentPageStream.add(index);
+                    // 预缓存新页的大图，加载完成后自动切换
+                    _precacheLarge(index);
                   },
                 ),
               ),
