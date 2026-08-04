@@ -170,8 +170,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                 onVerticalDragEnd: (details) {
                   // 图片放大后上下滑动应是拖动图片查看，不退出
                   final scaleState = _scaleStates[_initialPage];
-                  if (scaleState == PhotoViewScaleState.zooming ||
-                      scaleState == PhotoViewScaleState.zoomed) {
+                  if (scaleState == PhotoViewScaleState.zoomedIn) {
                     return;
                   }
                   final velocity = details.primaryVelocity ?? 0;
@@ -247,7 +246,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                   itemCount: _imgList.length,
                   // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
                   physics: _scaleStates[_initialPage] ==
-                          PhotoViewScaleState.zoomed
+                          PhotoViewScaleState.zoomedIn
                       ? const NeverScrollableScrollPhysics()
                       : const BouncingScrollPhysics(),
                   onPageChanged: (index) {
@@ -276,7 +275,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                       minScale: PhotoViewComputedScale.contained,
                       maxScale: PhotoViewComputedScale.covered * 3,
                       heroAttributes: activeTag != null
-                          ? PhotoViewHeroAttributes(tag: activeTag)
+                          ? HeroAttributes(tag: activeTag)
                           : null,
                       scaleStateChangedCallback: (state) {
                         setState(() => _scaleStates[index] = state);
