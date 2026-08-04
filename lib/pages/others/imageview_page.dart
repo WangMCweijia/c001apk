@@ -107,6 +107,8 @@ class _ImageViewPageState extends State<ImageViewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isZoomed = _scaleStates[_initialPage] ==
+        PhotoViewScaleState.zoomedIn;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -236,8 +238,6 @@ class _ImageViewPageState extends State<ImageViewPage> {
                   },
                 ),
               // 手势层：放大时仅保留长按，点击/滑动退出交由 PhotoView 独占
-              final isZoomed = _scaleStates[_initialPage] ==
-                  PhotoViewScaleState.zoomedIn;
               GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: isZoomed ? null : _onExit,
