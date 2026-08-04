@@ -43,6 +43,12 @@ class _ImageViewPageState extends State<ImageViewPage> {
   static const double _edgeWidth = 24; // 边缘判定宽度（dp）
   static const double _swipeThreshold = 60; // 触发返回的最小位移（dp）
 
+  // 垂直滑动退出追踪：用 Listener 原始指针事件实现，不参与手势竞技场，
+  // 避免干扰 PhotoView 的 ScaleGestureRecognizer。
+  int? _swipePointerId;
+  double _swipeStartY = 0;
+  int _swipeStartTime = 0;
+
   @override
   void dispose() {
     _currentPageStream.close();
@@ -107,8 +113,6 @@ class _ImageViewPageState extends State<ImageViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isZoomed = _scaleStates[_initialPage] ==
-        PhotoViewScaleState.zoomedIn;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -134,6 +138,13 @@ class _ImageViewPageState extends State<ImageViewPage> {
           } else {
             _edgeSwipeStartX = null;
           }
+          // 垂直滑动退出：追踪第一根手指
+          if (_swipePointerId == null) {
+            _swipePointerId = details.pointer;
+            _swipeStartY = details.position.dy;
+            _swipeStartTime =
+                DateTime.now().millisecondsSinceEpoch;
+          }
         },
         onPointerMove: (details) {
           if (_edgeSwipeStartX == null || _edgeSwipeTriggered) return;
@@ -150,13 +161,32 @@ class _ImageViewPageState extends State<ImageViewPage> {
             _onExit();
           }
         },
-        onPointerUp: (_) {
+        onPointerUp: (details) {
           _edgeSwipeStartX = null;
           _edgeSwipeTriggered = false;
+          // 垂直滑动退出检测
+          if (details.pointer == _swipePointerId) {
+            _swipePointerId = null;
+            // 放大时不触发滑动退出
+            final scaleState = _scaleStates[_initialPage];
+            if (scaleState == PhotoViewScaleState.zoomedIn) return;
+            final dy = details.position.dy - _swipeStartY;
+            final dt = DateTime.now().millisecondsSinceEpoch -
+                _swipeStartTime;
+            if (dt > 0 && dt < 500) {
+              final velocity = (dy / dt) * 1000; // px/s
+              if (velocity < -300) {
+                _onSwipeExit(-1);
+              } else if (velocity > 300) {
+                _onSwipeExit(1);
+              }
+            }
+          }
         },
         onPointerCancel: (_) {
           _edgeSwipeStartX = null;
           _edgeSwipeTriggered = false;
+          _swipePointerId = null;
         },
         child: PopScope(
           // 允许一次边缘返回手势直接退出，不拦截
@@ -167,97 +197,24 @@ class _ImageViewPageState extends State<ImageViewPage> {
           body: Stack(
             alignment: Alignment.center,
             children: [
-              GestureDetector(
-                // 不设置 onTap，避免 TapGestureRecognizer 与 PhotoView 的
-                // ScaleGestureRecognizer 竞争第一根手指导致双指缩放失效。
-                // 点击退出改用 PhotoView.onTapUp 处理。
-                onVerticalDragEnd: isZoomed
-                    ? null
-                    : (details) {
-                        final velocity = details.primaryVelocity ?? 0;
-                        if (velocity < -300) {
-                          _onSwipeExit(-1);
-                        } else if (velocity > 300) {
-                          _onSwipeExit(1);
-                        }
-                      },
-                onLongPress: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        clipBehavior: Clip.hardEdge,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 12),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              title: const Text('保存',
-                                  style: TextStyle(fontSize: 14)),
-                              onTap: () {
-                                DownloadUtils.downloadImg(
-                                    [_imgList[_initialPage]]);
-                                Get.back();
-                              },
-                            ),
-                            if (_imgList.length != 1)
-                              ListTile(
-                                title: const Text('保存全部',
-                                    style: TextStyle(fontSize: 14)),
-                                onTap: () {
-                                  DownloadUtils.downloadImg(_imgList);
-                                  Get.back();
-                                },
-                              ),
-                            ListTile(
-                              title: const Text('分享',
-                                  style: TextStyle(fontSize: 14)),
-                              onTap: () {
-                                Utils.onShareImg(_imgList[_initialPage]);
-                                Get.back();
-                              },
-                            ),
-                            ListTile(
-                              title: const Text('复制',
-                                  style: TextStyle(fontSize: 14)),
-                              onTap: () {
-                                Utils.copyText(_imgList[_initialPage]);
-                                Get.back();
-                              },
-                            ),
-                            if (Utils.isDesktop)
-                              ListTile(
-                                title: const Text('在浏览器打开',
-                                    style: TextStyle(fontSize: 14)),
-                                onTap: () {
-                                  Utils.launchURL(_imgList[_initialPage]);
-                                  Get.back();
-                                },
-                              ),
-                          ],
-                        ),
-                      );
-                    });
+              PageView.builder(
+                controller: _pageController,
+                itemCount: _imgList.length,
+                // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
+                physics: _scaleStates[_initialPage] ==
+                        PhotoViewScaleState.zoomedIn
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                onPageChanged: (index) {
+                  setState(() {
+                    _initialPage = index;
+                    _heroTag =
+                        '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
+                  });
+                  _currentPageStream.add(index);
+                  _precacheLarge(index);
                 },
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _imgList.length,
-                  // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
-                  physics: _scaleStates[_initialPage] ==
-                          PhotoViewScaleState.zoomedIn
-                      ? const NeverScrollableScrollPhysics()
-                      : const BouncingScrollPhysics(),
-                  onPageChanged: (index) {
-                    setState(() {
-                      _initialPage = index;
-                      _heroTag =
-                          '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
-                    });
-                    _currentPageStream.add(index);
-                    _precacheLarge(index);
-                  },
-                  itemBuilder: (context, index) {
+                itemBuilder: (context, index) {
                     final thumbUrl =
                         '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
                     final activeTag = index == _initialPage
@@ -265,7 +222,71 @@ class _ImageViewPageState extends State<ImageViewPage> {
                         : null;
                     final useLarge = _largeReady.contains(index);
                     final imageUrl = useLarge ? _imgList[index] : thumbUrl;
-                    return PhotoView(
+                    // 仅含 onLongPress 的 GestureDetector 包裹 PhotoView：
+                    // LongPressGestureRecognizer 需要手指保持不动 500ms 才触发，
+                    // 不会与 PhotoView 的 ScaleGestureRecognizer 竞争（缩放需要手指移动）。
+                    // 不设置 onTap/onVerticalDragEnd，避免对应 recognizer 干扰缩放。
+                    return GestureDetector(
+                      onLongPress: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              clipBehavior: Clip.hardEdge,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 12),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    title: const Text('保存',
+                                        style: TextStyle(fontSize: 14)),
+                                    onTap: () {
+                                      DownloadUtils.downloadImg(
+                                          [_imgList[_initialPage]]);
+                                      Get.back();
+                                    },
+                                  ),
+                                  if (_imgList.length != 1)
+                                    ListTile(
+                                      title: const Text('保存全部',
+                                          style: TextStyle(fontSize: 14)),
+                                      onTap: () {
+                                        DownloadUtils.downloadImg(_imgList);
+                                        Get.back();
+                                      },
+                                    ),
+                                  ListTile(
+                                    title: const Text('分享',
+                                        style: TextStyle(fontSize: 14)),
+                                    onTap: () {
+                                      Utils.onShareImg(_imgList[_initialPage]);
+                                      Get.back();
+                                    },
+                                  ),
+                                  ListTile(
+                                    title: const Text('复制',
+                                        style: TextStyle(fontSize: 14)),
+                                    onTap: () {
+                                      Utils.copyText(_imgList[_initialPage]);
+                                      Get.back();
+                                    },
+                                  ),
+                                  if (Utils.isDesktop)
+                                    ListTile(
+                                      title: const Text('在浏览器打开',
+                                          style: TextStyle(fontSize: 14)),
+                                      onTap: () {
+                                        Utils.launchURL(_imgList[_initialPage]);
+                                        Get.back();
+                                      },
+                                    ),
+                                ],
+                              ),
+                            );
+                          });
+                      },
+                      child: PhotoView(
                       imageProvider: CachedNetworkImageProvider(imageUrl),
                       onTapUp: (context, details, controllerValue) =>
                           _onExit(),
@@ -309,10 +330,10 @@ class _ImageViewPageState extends State<ImageViewPage> {
                           ),
                         );
                       },
+                    ),
                     );
                   },
                 ),
-              ),
               if (Utils.isDesktop && _imgList.length != 1)
                 Positioned(
                   left: 0,
