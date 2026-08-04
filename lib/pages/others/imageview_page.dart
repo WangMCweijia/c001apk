@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
+import '../../constants/constants.dart';
 import '../../utils/download_util.dart';
 import '../../utils/utils.dart';
 
@@ -229,18 +230,45 @@ class _ImageViewPageState extends State<ImageViewPage> {
                     );
                   },
                   itemCount: _imgList.length,
-                  loadingBuilder: (context, event) => Center(
-                    child: SizedBox(
-                      width: 20.0,
-                      height: 20.0,
-                      child: CircularProgressIndicator(
-                        value: event == null
-                            ? 0
-                            : event.cumulativeBytesLoaded /
-                                event.expectedTotalBytes!,
+                  loadingBuilder: (context, event) {
+                    // 初次加载大图时,先显示缩略图拉伸(缩略图通常已缓存),
+                    // 让 Hero 飞行动画有内容可显示,避免初次点开无过渡动画。
+                    // 大图加载完后 loadingBuilder 自动消失,PhotoView 显示大图。
+                    final index = _pageController.hasClients
+                        ? (_pageController.page?.round() ?? _initialPage)
+                        : _initialPage;
+                    final safeIndex =
+                        index >= 0 && index < _imgList.length
+                            ? index
+                            : _initialPage;
+                    final thumbUrl =
+                        '${_imgList[safeIndex]}${Constants.SUFFIX_THUMBNAIL}';
+                    final progress = event == null
+                        ? null
+                        : event.cumulativeBytesLoaded /
+                            (event.expectedTotalBytes ?? 1);
+                    return CachedNetworkImage(
+                      imageUrl: thumbUrl,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                      placeholder: (context, url) => Center(
+                        child: SizedBox(
+                          width: 20.0,
+                          height: 20.0,
+                          child: CircularProgressIndicator(value: progress ?? 0),
+                        ),
                       ),
-                    ),
-                  ),
+                      errorWidget: (context, url, error) => Center(
+                        child: SizedBox(
+                          width: 20.0,
+                          height: 20.0,
+                          child:
+                              CircularProgressIndicator(value: progress ?? 0),
+                        ),
+                      ),
+                    );
+                  },
                   pageController: _pageController,
                   onPageChanged: (index) {
                     setState(() {

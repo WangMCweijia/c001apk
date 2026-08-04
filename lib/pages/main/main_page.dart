@@ -200,45 +200,60 @@ class _MainPageState extends State<MainPage> {
 
       // 展开态：主页 | 分隔线 | 我的 | 分隔线 | 发布
       // 收起态：仅刷新按钮（占据发布位置，容器宽度收缩）
-      // AnimatedSize 平滑过渡容器宽度，最右边按钮位置自然保持在右侧
-      final Widget capsuleChild = isExpanded
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _capsuleIconButton(
-                  icon: _selectedIndex == 0
-                      ? Icons.home
-                      : Icons.home_outlined,
-                  label: '主页',
-                  selected: _selectedIndex == 0,
-                  isDark: isDark,
-                  onTap: () => onDestinationSelected(0),
-                ),
-                _capsuleDivider(isDark),
-                _capsuleIconButton(
-                  icon: _selectedIndex == 1
-                      ? Icons.person
-                      : Icons.person_outline,
-                  label: '我的',
-                  selected: _selectedIndex == 1,
-                  isDark: isDark,
-                  onTap: () => onDestinationSelected(1),
-                ),
-                if (isLogin) ...[
-                  _capsuleDivider(isDark),
-                  _capsuleActionButton(
-                    isDark: isDark,
-                    isExpanded: true,
-                    canRefresh: canRefresh,
-                  ),
-                ],
-              ],
-            )
-          : _capsuleActionButton(
+      // 每个按钮元素独立用 _collapsingItem 控制宽度+透明度过渡,
+      // 与背景容器宽度过渡(280ms)协调,避免内容瞬间切换。
+      final Widget capsuleChild = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _collapsingItem(
+            expanded: isExpanded,
+            child: _capsuleIconButton(
+              icon: _selectedIndex == 0
+                  ? Icons.home
+                  : Icons.home_outlined,
+              label: '主页',
+              selected: _selectedIndex == 0,
               isDark: isDark,
-              isExpanded: false,
+              onTap: () => onDestinationSelected(0),
+            ),
+          ),
+          _collapsingItem(
+            expanded: isExpanded,
+            child: _capsuleDivider(isDark),
+          ),
+          _collapsingItem(
+            expanded: isExpanded,
+            child: _capsuleIconButton(
+              icon: _selectedIndex == 1
+                  ? Icons.person
+                  : Icons.person_outline,
+              label: '我的',
+              selected: _selectedIndex == 1,
+              isDark: isDark,
+              onTap: () => onDestinationSelected(1),
+            ),
+          ),
+          if (isLogin) ...[
+            _collapsingItem(
+              expanded: isExpanded,
+              child: _capsuleDivider(isDark),
+            ),
+            _capsuleActionButton(
+              isDark: isDark,
+              isExpanded: isExpanded,
               canRefresh: canRefresh,
-            );
+            ),
+          ] else
+            _collapsingItem(
+              expanded: !isExpanded,
+              child: _capsuleActionButton(
+                isDark: isDark,
+                isExpanded: false,
+                canRefresh: canRefresh,
+              ),
+            ),
+        ],
+      );
 
       return DecoratedBox(
         decoration: shadowDecoration,
@@ -247,21 +262,45 @@ class _MainPageState extends State<MainPage> {
           // 毛玻璃：模糊按钮背后的内容，叠加半透明 capsuleDecoration
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeInOutCubic,
-              alignment: Alignment.centerRight,
-              child: Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: capsuleDecoration,
-                child: capsuleChild,
-              ),
+            child: Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: capsuleDecoration,
+              child: capsuleChild,
             ),
           ),
         ),
       );
     });
+  }
+
+  /// 可折叠项：展开时宽度过渡到子组件实际宽度并淡入,
+  /// 收起时宽度过渡到0并淡出,与容器背景过渡动画协调。
+  /// 用 ClipRect+OverflowBox 让子组件保持自身尺寸不被压缩,
+  /// 仅外层 SizedBox 控制占用宽度,实现平滑宽度过渡。
+  Widget _collapsingItem({
+    required bool expanded,
+    required Widget child,
+  }) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOutCubic,
+      child: ClipRect(
+        child: SizedBox(
+          width: expanded ? null : 0,
+          child: OverflowBox(
+            maxWidth: double.infinity,
+            alignment: Alignment.centerLeft,
+            child: AnimatedOpacity(
+              opacity: expanded ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOutCubic,
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   /// 胶囊分隔线
