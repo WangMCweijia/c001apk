@@ -165,83 +165,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
           body: Stack(
             alignment: Alignment.center,
             children: [
-              GestureDetector(
-                onTap: _onExit,
-                onVerticalDragEnd: (details) {
-                  // 图片放大后上下滑动应是拖动图片查看，不退出
-                  final scaleState = _scaleStates[_initialPage];
-                  if (scaleState == PhotoViewScaleState.zoomedIn) {
-                    return;
-                  }
-                  final velocity = details.primaryVelocity ?? 0;
-                  if (velocity < -300) {
-                    // 上滑 → 向上退出
-                    _onSwipeExit(-1);
-                  } else if (velocity > 300) {
-                    // 下滑 → 向下退出
-                    _onSwipeExit(1);
-                  }
-                },
-                onLongPress: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        clipBehavior: Clip.hardEdge,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 12),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              title: const Text('保存',
-                                  style: TextStyle(fontSize: 14)),
-                              onTap: () {
-                                DownloadUtils.downloadImg(
-                                    [_imgList[_initialPage]]);
-                                Get.back();
-                              },
-                            ),
-                            if (_imgList.length != 1)
-                              ListTile(
-                                title: const Text('保存全部',
-                                    style: TextStyle(fontSize: 14)),
-                                onTap: () {
-                                  DownloadUtils.downloadImg(_imgList);
-                                  Get.back();
-                                },
-                              ),
-                            ListTile(
-                              title: const Text('分享',
-                                  style: TextStyle(fontSize: 14)),
-                              onTap: () {
-                                Utils.onShareImg(_imgList[_initialPage]);
-                                Get.back();
-                              },
-                            ),
-                            ListTile(
-                              title: const Text('复制',
-                                  style: TextStyle(fontSize: 14)),
-                              onTap: () {
-                                Utils.copyText(_imgList[_initialPage]);
-                                Get.back();
-                              },
-                            ),
-                            if (Utils.isDesktop)
-                              ListTile(
-                                title: const Text('在浏览器打开',
-                                    style: TextStyle(fontSize: 14)),
-                                onTap: () {
-                                  Utils.launchURL(_imgList[_initialPage]);
-                                  Get.back();
-                                },
-                              ),
-                          ],
-                        ),
-                      );
-                    });
-                },
-                child: PageView.builder(
+              PageView.builder(
                   controller: _pageController,
                   itemCount: _imgList.length,
                   // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
@@ -311,6 +235,81 @@ class _ImageViewPageState extends State<ImageViewPage> {
                     );
                   },
                 ),
+              // 手势层：放大时仅保留长按，点击/滑动退出交由 PhotoView 独占
+              final isZoomed = _scaleStates[_initialPage] ==
+                  PhotoViewScaleState.zoomedIn;
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: isZoomed ? null : _onExit,
+                onVerticalDragEnd: isZoomed
+                    ? null
+                    : (details) {
+                        final velocity = details.primaryVelocity ?? 0;
+                        if (velocity < -300) {
+                          _onSwipeExit(-1);
+                        } else if (velocity > 300) {
+                          _onSwipeExit(1);
+                        }
+                      },
+                onLongPress: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        clipBehavior: Clip.hardEdge,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              title: const Text('保存',
+                                  style: TextStyle(fontSize: 14)),
+                              onTap: () {
+                                DownloadUtils.downloadImg(
+                                    [_imgList[_initialPage]]);
+                                Get.back();
+                              },
+                            ),
+                            if (_imgList.length != 1)
+                              ListTile(
+                                title: const Text('保存全部',
+                                    style: TextStyle(fontSize: 14)),
+                                onTap: () {
+                                  DownloadUtils.downloadImg(_imgList);
+                                  Get.back();
+                                },
+                              ),
+                            ListTile(
+                              title: const Text('分享',
+                                  style: TextStyle(fontSize: 14)),
+                              onTap: () {
+                                Utils.onShareImg(_imgList[_initialPage]);
+                                Get.back();
+                              },
+                            ),
+                            ListTile(
+                              title: const Text('复制',
+                                  style: TextStyle(fontSize: 14)),
+                              onTap: () {
+                                Utils.copyText(_imgList[_initialPage]);
+                                Get.back();
+                              },
+                            ),
+                            if (Utils.isDesktop)
+                              ListTile(
+                                title: const Text('在浏览器打开',
+                                    style: TextStyle(fontSize: 14)),
+                                onTap: () {
+                                  Utils.launchURL(_imgList[_initialPage]);
+                                  Get.back();
+                                },
+                              ),
+                          ],
+                        ),
+                      );
+                    });
+                },
               ),
               if (Utils.isDesktop && _imgList.length != 1)
                 Positioned(
