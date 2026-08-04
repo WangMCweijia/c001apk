@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../constants/constants.dart';
 import '../../utils/download_util.dart';
@@ -31,6 +30,9 @@ class _ImageViewPageState extends State<ImageViewPage> {
 
   // 已缓存大图的索引集合：用于切换缩略图→大图显示
   final Set<int> _largeReady = {};
+
+  // 各页面的缩放状态：用于判断放大后垂直滑动是否退出
+  final Map<int, PhotoViewScaleState> _scaleStates = {};
 
   // 边缘侧滑返回识别：manual + overlays:[] 下系统返回手势会被吞掉，
   // 这里用 Listener 自行监听边缘水平滑动，主动调用 Get.back() 完成一次返回。
@@ -166,6 +168,12 @@ class _ImageViewPageState extends State<ImageViewPage> {
               GestureDetector(
                 onTap: _onExit,
                 onVerticalDragEnd: (details) {
+                  // 图片放大后上下滑动应是拖动图片查看，不退出
+                  final scaleState = _scaleStates[_initialPage];
+                  if (scaleState == PhotoViewScaleState.zooming ||
+                      scaleState == PhotoViewScaleState.zoomed) {
+                    return;
+                  }
                   final velocity = details.primaryVelocity ?? 0;
                   if (velocity < -300) {
                     // 上滑 → 向上退出
@@ -234,82 +242,74 @@ class _ImageViewPageState extends State<ImageViewPage> {
                       );
                     });
                 },
-                child: PhotoViewGallery.builder(
-                  backgroundDecoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  scrollPhysics: const BouncingScrollPhysics(),
-                  builder: (BuildContext context, int index) {
-                    // 只有当前页设置 Hero tag，确保退出时返回对应缩略图
-                    // Hero tag 使用缩略图 URL，确保初次打开时缩略图已缓存
-                    //（缩略图在列表页已加载过），Hero 动画始终有内容可显示
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _imgList.length,
+                  // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
+                  physics: _scaleStates[_initialPage] ==
+                          PhotoViewScaleState.zoomed
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(),
+                  onPageChanged: (index) {
+                    setState(() {
+                      _initialPage = index;
+                      _heroTag =
+                          '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
+                    });
+                    _currentPageStream.add(index);
+                    _precacheLarge(index);
+                  },
+                  itemBuilder: (context, index) {
                     final thumbUrl =
                         '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
                     final activeTag = index == _initialPage
                         ? (_heroTag ?? thumbUrl)
                         : null;
-                    // 大图已缓存则用大图，否则用缩略图（保证 Hero 动画有内容）
                     final useLarge = _largeReady.contains(index);
                     final imageUrl = useLarge ? _imgList[index] : thumbUrl;
-                    return PhotoViewGalleryPageOptions(
+                    return PhotoView(
                       imageProvider: CachedNetworkImageProvider(imageUrl),
+                      backgroundDecoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
                       initialScale: PhotoViewComputedScale.contained,
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 3,
                       heroAttributes: activeTag != null
                           ? PhotoViewHeroAttributes(tag: activeTag)
                           : null,
+                      scaleStateChangedCallback: (state) {
+                        setState(() => _scaleStates[index] = state);
+                      },
+                      loadingBuilder: (context, event) {
+                        final progress = event == null
+                            ? null
+                            : event.cumulativeBytesLoaded /
+                                (event.expectedTotalBytes ?? 1);
+                        return CachedNetworkImage(
+                          imageUrl: thumbUrl,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: double.infinity,
+                          placeholder: (context, url) => Center(
+                            child: SizedBox(
+                              width: 20.0,
+                              height: 20.0,
+                              child: CircularProgressIndicator(
+                                  value: progress ?? 0),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Center(
+                            child: SizedBox(
+                              width: 20.0,
+                              height: 20.0,
+                              child: CircularProgressIndicator(
+                                  value: progress ?? 0),
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  },
-                  itemCount: _imgList.length,
-                  loadingBuilder: (context, event) {
-                    // 初次加载大图时,先显示缩略图拉伸(缩略图通常已缓存),
-                    // 让 Hero 飞行动画有内容可显示,避免初次点开无过渡动画。
-                    // 大图加载完后 loadingBuilder 自动消失,PhotoView 显示大图。
-                    final index = _pageController.hasClients
-                        ? (_pageController.page?.round() ?? _initialPage)
-                        : _initialPage;
-                    final safeIndex =
-                        index >= 0 && index < _imgList.length
-                            ? index
-                            : _initialPage;
-                    final thumbUrl =
-                        '${_imgList[safeIndex]}${Constants.SUFFIX_THUMBNAIL}';
-                    final progress = event == null
-                        ? null
-                        : event.cumulativeBytesLoaded /
-                            (event.expectedTotalBytes ?? 1);
-                    return CachedNetworkImage(
-                      imageUrl: thumbUrl,
-                      fit: BoxFit.contain,
-                      width: double.infinity,
-                      height: double.infinity,
-                      placeholder: (context, url) => Center(
-                        child: SizedBox(
-                          width: 20.0,
-                          height: 20.0,
-                          child: CircularProgressIndicator(value: progress ?? 0),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Center(
-                        child: SizedBox(
-                          width: 20.0,
-                          height: 20.0,
-                          child:
-                              CircularProgressIndicator(value: progress ?? 0),
-                        ),
-                      ),
-                    );
-                  },
-                  pageController: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _initialPage = index;
-                      // 更新 heroTag 为当前浏览图片的缩略图 URL
-                      _heroTag =
-                          '${_imgList[index]}${Constants.SUFFIX_THUMBNAIL}';
-                    });
-                    _currentPageStream.add(index);
-                    // 预缓存新页的大图，加载完成后自动切换
-                    _precacheLarge(index);
                   },
                 ),
               ),
