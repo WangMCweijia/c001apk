@@ -47,6 +47,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
   // 避免干扰 PhotoView 的 ScaleGestureRecognizer。
   int? _swipePointerId;
   double _swipeStartY = 0;
+  double _swipeStartX = 0;
   int _swipeStartTime = 0;
 
   @override
@@ -142,6 +143,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
           if (_swipePointerId == null) {
             _swipePointerId = details.pointer;
             _swipeStartY = details.position.dy;
+            _swipeStartX = details.position.dx;
             _swipeStartTime =
                 DateTime.now().millisecondsSinceEpoch;
           }
@@ -171,8 +173,11 @@ class _ImageViewPageState extends State<ImageViewPage> {
             final scaleState = _scaleStates[_initialPage];
             if (scaleState == PhotoViewScaleState.zoomedIn) return;
             final dy = details.position.dy - _swipeStartY;
+            final dx = (details.position.dx - _swipeStartX).abs();
             final dt = DateTime.now().millisecondsSinceEpoch -
                 _swipeStartTime;
+            // 水平位移大于垂直位移时，判定为左右翻页，不触发退出
+            if (dx > dy.abs()) return;
             if (dt > 0 && dt < 500) {
               final velocity = (dy / dt) * 1000; // px/s
               if (velocity < -300) {
