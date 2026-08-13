@@ -50,6 +50,10 @@ class _ImageViewPageState extends State<ImageViewPage> {
   double _swipeStartX = 0;
   int _swipeStartTime = 0;
 
+  // PageView 滚动状态：滚动期间 PhotoView.onTapUp 不触发，
+  // 用 Listener 检测点击作为退出兜底。
+  bool _isPageSettling = false;
+
   @override
   void dispose() {
     _currentPageStream.close();
@@ -171,14 +175,27 @@ class _ImageViewPageState extends State<ImageViewPage> {
             _swipePointerId = null;
             // 放大时不触发滑动退出
             final scaleState = _scaleStates[_initialPage];
-            if (scaleState == PhotoViewScaleState.zoomedIn) return;
+            final isZoomed =
+                scaleState == PhotoViewScaleState.zoomedIn;
             final dy = details.position.dy - _swipeStartY;
-            final dx = (details.position.dx - _swipeStartX).abs();
+            final dxAbs = (details.position.dx - _swipeStartX).abs();
             final dt = DateTime.now().millisecondsSinceEpoch -
                 _swipeStartTime;
+
+            // 点击退出兜底：PageView 滚动动画期间 PhotoView.onTapUp
+            // 不触发，这里用原始指针事件检测点击（短时间+小位移）。
+            final totalMove = dxAbs + dy.abs();
+            if (!isZoomed &&
+                _isPageSettling &&
+                dt < 250 &&
+                totalMove < 20) {
+              _onExit();
+              return;
+            }
+
             // 水平位移大于垂直位移时，判定为左右翻页，不触发退出
-            if (dx > dy.abs()) return;
-            if (dt > 0 && dt < 500) {
+            if (dxAbs > dy.abs()) return;
+            if (!isZoomed && dt > 0 && dt < 500) {
               final velocity = (dy / dt) * 1000; // px/s
               if (velocity < -300) {
                 _onSwipeExit(-1);
@@ -202,7 +219,17 @@ class _ImageViewPageState extends State<ImageViewPage> {
           body: Stack(
             alignment: Alignment.center,
             children: [
-              PageView.builder(
+              NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollStartNotification) {
+                    _isPageSettling = true;
+                  } else if (notification
+                      is ScrollEndNotification) {
+                    _isPageSettling = false;
+                  }
+                  return false;
+                },
+                child: PageView.builder(
                 controller: _pageController,
                 itemCount: _imgList.length,
                 // 放大后禁止翻页，让 PhotoView 处理水平滑动（拖动图片左右查看）
@@ -339,6 +366,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                     );
                   },
                 ),
+              ),
               if (Utils.isDesktop && _imgList.length != 1)
                 Positioned(
                   left: 0,
