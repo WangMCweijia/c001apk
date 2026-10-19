@@ -2,6 +2,7 @@ package com.example.c001apk.flutter
 
 import android.app.DownloadManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -32,7 +33,22 @@ class MainActivity : FlutterFragmentActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             CHANNEL
         ).setMethodCallHandler { call, result ->
-            if (call.method == "getInstalledApps") {
+            if (call.method == "openOfficialIdSettings") {
+                try {
+                    packageManager.getApplicationInfo("com.coolapk.market", 0)
+                    startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("coolmarket://www.coolapk.com/native/testSettings")
+                        ).setPackage("com.coolapk.market")
+                    )
+                    result.success(true)
+                } catch (e: PackageManager.NameNotFoundException) {
+                    result.error("official_client_not_installed", null, null)
+                } catch (e: Exception) {
+                    result.success(false)
+                }
+            } else if (call.method == "getInstalledApps") {
                 Thread {
                     result.success(getInstalledApps())
                 }.start()

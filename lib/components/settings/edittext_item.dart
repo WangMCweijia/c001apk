@@ -43,7 +43,10 @@ class EdittextItemState extends State<EdittextItem> {
   }
 
   void onChanged(String value) async {
-    await GStorage.settings.put(widget.boxKey, value);
+    final normalized = widget.boxKey == SettingsBoxKey.szlmId
+        ? GStorage.extractSzlmId(value)
+        : value;
+    await GStorage.settings.put(widget.boxKey, normalized);
     if (widget.needUpdateUserAgent) {
       GStorage.fullSetUserAgent();
     }
@@ -53,7 +56,7 @@ class EdittextItemState extends State<EdittextItem> {
     if (widget.onChanged != null) {
       widget.onChanged!();
     }
-    setState(() => this.value = value);
+    setState(() => this.value = normalized);
   }
 
   @override

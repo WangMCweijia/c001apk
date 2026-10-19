@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -8,41 +10,37 @@ import '../../utils/storage_util.dart';
 import '../../utils/token_util.dart';
 
 class ApiInterceptor extends Interceptor {
-  String? _token;
-  String? _xAppDevice;
-  String? _userAgent;
-  String? _sdkInt;
-  String? _versionName;
-  String? _versionCode;
-  String? _apiVersion;
+  static String? _captchaCookie;
 
-  String get apiVersion {
-    return _apiVersion ??= GStorage.apiVersion;
+  static bool isApiHost(String host) =>
+      host == 'api.coolapk.com' || host == 'api2.coolapk.com';
+
+  static void setCaptchaCookie(String proof) {
+    final encoded = Uri.encodeQueryComponent(proof);
+    _captchaCookie = encoded;
+    GStorage.settings.put(SettingsBoxKey.apiCaptchaValidate, encoded);
   }
 
-  String get versionCode {
-    return _versionCode ??= GStorage.versionCode;
+  static void clearCaptchaCookie() {
+    _captchaCookie = null;
+    GStorage.settings.delete(SettingsBoxKey.apiCaptchaValidate);
   }
 
-  String get versionName {
-    return _versionName ??= GStorage.versionName;
-  }
+  static String? get currentCaptchaCookie =>
+      _captchaCookie ??
+      GStorage.settings.get(SettingsBoxKey.apiCaptchaValidate) as String?;
 
-  String get sdkInt {
-    return _sdkInt ??= GStorage.sdkInt;
-  }
+  String get apiVersion => GStorage.apiVersion;
+  String get versionCode => GStorage.versionCode;
+  String get versionName => GStorage.versionName;
+  String get sdkInt => GStorage.sdkInt;
+  String get xAppDevice => GStorage.xAppDevice;
+  String get userAgent => GStorage.userAgent;
 
-  String get xAppDevice {
-    return _xAppDevice ??= GStorage.xAppDevice;
-  }
-
-  String get userAgent {
-    return _userAgent ??= GStorage.userAgent;
-  }
-
-  String get token {
-    return _token ??= TokenUtils.getTokenV2(xAppDevice);
-  }
+  String get token => TokenUtils.getTokenV3(
+        xAppDevice,
+        appCode: int.tryParse(versionCode) ?? 2604201,
+      );
 
   @override
   void onRequest(options, handler) async {
@@ -86,7 +84,6 @@ class ApiInterceptor extends Interceptor {
           'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8';
       options.headers['X-Requested-With'] = Constants.APP_ID;
       options.headers['Sec-Fetch-Site'] = 'same-origin';
-      options.headers['Sec-Fetch-Site'] = 'same-origin';
       options.headers['Sec-Fetch-Mode'] = 'no-cors';
       options.headers['Sec-Fetch-Dest'] = 'image';
       options.headers['Referer'] =
@@ -117,12 +114,39 @@ class ApiInterceptor extends Interceptor {
       options.headers['X-App-Channel'] = Constants.CHANNEL;
       options.headers['X-App-Mode'] = Constants.MODE;
       options.headers['X-App-Supported'] = versionCode;
-      options.headers['Cookie'] = GlobalData().isLogin
-          ? 'uid=${GlobalData().uid}; username=${GlobalData().username}; token=${GlobalData().token}'
-          : GlobalData().SESSID;
+
+      final cookies = <String>[
+        if (GlobalData().isLogin) ...[
+          'uid=${GlobalData().uid}',
+          'username=${GlobalData().username}',
+          'token=${GlobalData().token}',
+        ],
+        if (GlobalData().SESSID.isNotEmpty) GlobalData().SESSID,
+        if (currentCaptchaCookie != null && currentCaptchaCookie!.isNotEmpty)
+          'validate=$currentCaptchaCookie',
+      ];
+      options.headers['Cookie'] = cookies.join('; ');
     }
 
     handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (isApiHost(response.requestOptions.uri.host)) {
+      final setCookies = response.headers['set-cookie'] ?? const <String>[];
+      for (final raw in setCookies) {
+        try {
+          final cookie = Cookie.fromSetCookieValue(raw);
+          if (cookie.name == 'SESSID' && cookie.value.isNotEmpty) {
+            final sessid = 'SESSID=${cookie.value}';
+            GlobalData().SESSID = sessid;
+            GStorage.settings.put(SettingsBoxKey.apiSession, sessid);
+          }
+        } catch (_) {}
+      }
+    }
+    handler.next(response);
   }
 
   @override

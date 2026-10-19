@@ -83,6 +83,18 @@ class Utils {
     return Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
   }
 
+  static Future<void> openOfficialIdSettings() async {
+    try {
+      final opened =
+          await platform.invokeMethod<bool>('openOfficialIdSettings');
+      if (opened != true) {
+        SmartDialog.showToast('无法打开官方酷安测试页');
+      }
+    } catch (_) {
+      SmartDialog.showToast('未安装官方酷安或版本不支持');
+    }
+  }
+
   static Future<void> onShareImg(String url) async {
     SmartDialog.showLoading();
     var response = await Dio()

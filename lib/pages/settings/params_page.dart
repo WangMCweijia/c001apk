@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -45,6 +47,19 @@ class _ParamsPageState extends State<ParamsPage> {
     final brightness = Theme.of(context).brightness;
     final cardDeco = AppTheme.cardDecoration(brightness);
     final items = <Widget>[
+      EdittextItem(
+        title: '数字联盟ID (ShuzlmID)',
+        boxKey: SettingsBoxKey.szlmId,
+        needUpdateXAppDevice: true,
+        onChanged: () => _paramsController.onChanged(true),
+      ),
+      if (Platform.isAndroid)
+        ListTile(
+          title: const Text('打开官方酷安 OAID 页面'),
+          subtitle: const Text('在官方酷安内连续点击「复制 OAID」5次后返回此处粘贴'),
+          trailing: const Icon(Icons.open_in_new),
+          onTap: Utils.openOfficialIdSettings,
+        ),
       EdittextItem(
         title: '版本号',
         boxKey: SettingsBoxKey.versionName,

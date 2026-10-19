@@ -13,9 +13,11 @@ class Constants {
   static const MODE = 'universal';
   static const APP_LABEL =
       'token://com.coolapk.market/dcf01e569c1e3db93a3d0fcf191a622c';
-  static const VERSION_NAME = '13.4.1';
-  static const API_VERSION = '13';
-  static const VERSION_CODE = '2312121';
+  static const VERSION_NAME = '16.2.0';
+  static const API_VERSION = '16';
+  static const VERSION_CODE = '2604201';
+  static const DEFAULT_DEVICE_TAIL =
+      '832D661CAB174B7EA4D165715BB3C58Ea793d52a67cecb8166c755cc265dc05e';
 
   static const PREFIX_COOLMARKET = 'coolmarket://';
   static const PREFIX_HTTP = 'http';

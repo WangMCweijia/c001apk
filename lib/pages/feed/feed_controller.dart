@@ -147,25 +147,31 @@ class FeedController extends CommonController {
   }
 
   Future<void> getFeedData() async {
+    LoadingState<dynamic> response;
     try {
-      LoadingState<dynamic> response =
+      response =
           await NetworkRepo.getDataFromUrl(url: '/v6/feed/detail?id=$id');
-      if (response is Success) {
-        Datum data = (response.response as Datum);
-        _processFeedData(data);
-        onGetData();
-
-        isFav = GStorage.checkFav(id);
-        isBlocked = GStorage.checkUser(feedUid.toString());
-        // todo: check
-        if (recordHistory && !GStorage.checkHistory(id)) {
-          GStorage.historyFeed.put(id, getFeed(data));
-        }
-      }
-      feedState.value = response;
     } catch (e, stack) {
       debugPrint('[feedDetail] getFeedData EXCEPTION id=$id error=$e\n$stack');
-      feedState.value = LoadingState.error(e.toString());
+      response = LoadingState.error(e.toString());
+    }
+    if (response is Success) {
+      Datum data = (response.response as Datum);
+      _processFeedData(data);
+      feedState.value = response;
+      onGetData();
+
+      isFav = GStorage.checkFav(id);
+      isBlocked = GStorage.checkUser(feedUid.toString());
+      // todo: check
+      if (recordHistory && !GStorage.checkHistory(id)) {
+        GStorage.historyFeed.put(id, getFeed(data));
+      }
+    } else if (feedState.value is! Success) {
+      feedState.value = response;
+    } else {
+      // 如果列表页传入的预加载正文已经成功渲染，详情接口被风控或报错时不覆盖正文，并继续加载评论
+      onGetData();
     }
   }
 

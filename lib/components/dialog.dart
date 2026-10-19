@@ -93,6 +93,9 @@ class EditTextDialog extends StatelessWidget {
       content: TextField(
         autofocus: true,
         controller: controller,
+        minLines: 1,
+        maxLines: 5,
+        textInputAction: TextInputAction.done,
         onSubmitted: (value) {
           setData(value);
           Navigator.pop(context);

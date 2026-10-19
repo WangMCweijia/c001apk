@@ -133,11 +133,49 @@ class GStorage {
       setInstallTime(DateTime.now().millisecondsSinceEpoch.toString());
       await regenerateParams();
     }
+    await migrateProtocolParams();
 
     GlobalData().isLogin = isLogin;
     GlobalData().uid = uid;
     GlobalData().username = username;
     GlobalData().token = token;
+    GlobalData().SESSID =
+        settings.get(SettingsBoxKey.apiSession, defaultValue: '');
+  }
+
+  /// 自动升级存量客户端的协议版本与设备串结构（不重置用户的 szlmId 和登录态）
+  static Future<void> migrateProtocolParams() async {
+    if (settings.get(SettingsBoxKey.protocolRevision, defaultValue: 0) >= 2) {
+      return;
+    }
+    await settings.putAll({
+      SettingsBoxKey.versionName: Constants.VERSION_NAME,
+      SettingsBoxKey.versionCode: Constants.VERSION_CODE,
+      SettingsBoxKey.apiVersion: Constants.API_VERSION,
+    });
+    fullSetUserAgent();
+    await fullSetXAppDevice();
+    await settings.put(SettingsBoxKey.protocolRevision, 2);
+  }
+
+  /// 支持直接填入 ShuzlmID 或粘贴官方酷安连点 5 次「复制 OAID」的完整多行/单行文本
+  static String extractSzlmId(String raw) {
+    final text = raw.replaceAll('﻿', '').trim();
+    if (text.isEmpty) return '';
+    final match = RegExp(
+      r'ShuzlmID\s*[:：]\s*([A-Za-z0-9_+/.=-]{8,})',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match != null) {
+      return match.group(1)!.trim();
+    }
+    if (text.contains('\n') || text.contains('\r') || text.contains(':')) {
+      return '';
+    }
+    if (text.toLowerCase() == 'null' || text.toLowerCase() == 'undefined') {
+      return '';
+    }
+    return text.replaceAll(';', '');
   }
 
   static void regAdapter() {
@@ -163,8 +201,16 @@ class GStorage {
   }
 
   static Future<void> fullSetXAppDevice() async {
+    final cleanSzlmId = extractSzlmId(szlmId);
+    final firstField = cleanSzlmId.isNotEmpty
+        ? cleanSzlmId
+        : 'ca_${DeviceUtil.randHexString(32)}';
+    final cleanManufacturer = manufacturer.replaceAll(';', '');
+    final cleanBrand = brand.replaceAll(';', '');
+    final cleanModel = model.replaceAll(';', '');
+    final cleanBuild = buildNumber.replaceAll(';', '');
     setXAppDevice(await TokenUtils.encodeDevice(
-        '${szlmId.isEmpty ? DeviceUtil.randHexString(32) : szlmId}; ; ; ${DeviceUtil.randomMacAddress()}; $manufacturer; $brand; $model; $buildNumber; null'));
+        '$firstField; ; ; ; $cleanManufacturer; $cleanBrand; $cleanModel; $cleanBuild; ${Constants.DEFAULT_DEVICE_TAIL}'));
   }
 
   static Future<void> regenerateParams() async {
@@ -226,7 +272,7 @@ class GStorage {
   }
 
   static void setSzlmId(String value) {
-    settings.put(SettingsBoxKey.szlmId, value);
+    settings.put(SettingsBoxKey.szlmId, extractSzlmId(value));
   }
 
   static double get fontScale {
@@ -487,6 +533,9 @@ class SettingsBoxKey {
       checkUpdate = 'checkUpdate',
       checkCount = 'checkCount',
       installTime = 'installTime',
+      protocolRevision = 'protocolRevision',
+      apiSession = 'apiSession',
+      apiCaptchaValidate = 'apiCaptchaValidate',
       versionName = 'versionNamev',
       apiVersion = 'apiVersion',
       versionCode = 'versionCode',
